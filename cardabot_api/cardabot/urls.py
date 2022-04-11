@@ -6,6 +6,7 @@ from . import views
 urlpatterns = [
     path("chats/", views.ChatList.as_view()),
     path("chats/<str:chat_id>/", views.ChatDetail.as_view()),
+    path("epoch", views.Epoch.as_view()),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
