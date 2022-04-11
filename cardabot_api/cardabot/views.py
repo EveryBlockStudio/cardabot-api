@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
-import json
 
 from dataclasses import dataclass
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import Http404, JsonResponse
+from django.http import Http404
+import requests
 
 from .models import Chat
 from .serializers import ChatSerializer
@@ -18,6 +18,7 @@ class QueryParameters:
     """Set of possible query parameters."""
 
     client_filter = "client_filter"
+    currency_format = "currency_format"
 
 
 @dataclass
@@ -101,7 +102,7 @@ class Epoch(APIView):
         ).get("data")
 
         started_at = datetime.fromisoformat(
-            epochInfo["epochs"][0]["startedAt"][:-1]  # remove trailing "Z" of timestamp
+            epochInfo["epochs"][0]["startedAt"][:-1]  # remove trailing "Z" timestamp
         )
 
         remaining_time = (
@@ -114,7 +115,7 @@ class Epoch(APIView):
 
         # fmt: off
         response = {
-            "perc": percentage * 100,
+            "percentage": percentage * 100,
             "current_epoch": currentEpochTip["cardano"]["currentEpoch"]["number"],
             "current_slot": currentEpochTip["cardano"]["tip"]["slotNo"],
             "slot_in_epoch": currentEpochTip["cardano"]["tip"]["slotInEpoch"],
@@ -123,6 +124,82 @@ class Epoch(APIView):
             "active_stake": utils.fmt_ada(epochInfo["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]),
             "n_active_stake_pools": int(epochInfo["stakePools_aggregate"]["aggregate"]["count"]),
             "remaning_time": remaining_time,
+        }
+        # fmt: on
+
+        return Response({"data": response}, status=status.HTTP_200_OK)
+
+
+class StakePool(APIView):
+    """Get infos from a stake pool."""
+
+    def get(self, request, pool_id: str, format=None):
+        """Retrieve info from a stake pool.
+
+        Args:
+            pool_id (path param): stake pool id (BECH32).
+            currency_format (query param): currency format (ADA or LOVELACE).
+
+        Returns:
+            A dict with the query result.
+
+        """
+        epoch = GRAPHQL.this_epoch
+
+        adaSupply = GRAPHQL("adaSupply.graphql").get("data")
+        activeStake = GRAPHQL(
+            "epochActiveStakeNOpt.graphql",
+            variables={"epoch": epoch},
+        ).get("data")
+
+        stakePoolDetails = GRAPHQL(
+            "stakePoolDetails.graphql",
+            variables={"pool": pool_id, "epoch": epoch},
+        ).get("data")
+
+        try:
+            url = stakePoolDetails["stakePools"][0]["url"]  # pool not found
+        except IndexError:
+            raise Http404
+
+        res = requests.get(url)
+        metadata = res.json() if res.json() else {}
+
+        # fmt: off
+        stake = stakePoolDetails["stakePools"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]
+        total_stake = activeStake["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]
+        circ_supply = adaSupply["ada"]["supply"]["circulating"]
+        n_opt = activeStake["epochs"][0]["protocolParams"]["nOpt"]
+
+        controlled_stake_percentage = (int(stake) / int(total_stake)) * 100
+        saturation = utils.calc_pool_saturation(
+            int(stake), int(circ_supply), int(n_opt)
+        )
+
+        # convert lovelace values to ada if needed
+        currency = request.query_params.get(QueryParameters.currency_format)
+        fixed_cost = stakePoolDetails["stakePools"][0]["fixedCost"]
+        pledge = stakePoolDetails["stakePools"][0]["pledge"]
+        if  currency and currency.upper() == "ADA":
+            fixed_cost = utils.lovelace_to_ada(fixed_cost)
+            pledge = utils.lovelace_to_ada(pledge)
+            stake = utils.lovelace_to_ada(stake)
+
+        response = {
+            "ticker": metadata.get("ticker", "NOT FOUND."),
+            "name": metadata.get("name", "NOT FOUND."),
+            "description": metadata.get("description", "NOT FOUND."),
+            "homepage": metadata.get("homepage", "NOT FOUND."),
+            "pool_id": stakePoolDetails["stakePools"][0]["id"],
+            "pledge": pledge,
+            "fixed_cost": fixed_cost,
+            "margin": stakePoolDetails["stakePools"][0]["margin"] * 100,
+            "saturation": saturation * 100,  # !TODO: fix
+            "controlled_stake_percentage": controlled_stake_percentage,  # !TODO: fix
+            "active_stake_amount": stake,  # !TODO: fix
+            "delegators_count": int(stakePoolDetails["stakePools"][0]["delegators_aggregate"]["aggregate"]["count"]),
+            "epoch_blocks_count": int(stakePoolDetails["blocksThisEpoch"][0]["blocks_aggregate"]["aggregate"]["count"]),
+            "lifetime_blocks_count": int(stakePoolDetails["lifetimeBlocks"][0]["blocks_aggregate"]["aggregate"]["count"]),
         }
         # fmt: on
 
