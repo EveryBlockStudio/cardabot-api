@@ -16,7 +16,7 @@ def calc_pool_saturation(pool_stake: int, circulating_supply: int, n_opt: int) -
 
 
 def fmt_values_currency(values: list, currency: str) -> list:
-    """Convert a list of values to ADA if needed."""
+    """Convert a list of lovelace values to ADA if needed."""
     if currency and currency.upper() == "ADA":
         values = [lovelace_to_ada(value) for value in values]
         return values
