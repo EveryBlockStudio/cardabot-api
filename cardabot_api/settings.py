@@ -80,11 +80,11 @@ DATABASES = {
     # https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-14-04
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": "cardabot",
-        "USER": "cardabot_user",
-        "PASSWORD": os.environ.get("CARDABOT_PWD"),
-        "HOST": os.environ.get("HOST", "localhost"),
-        "PORT": os.environ.get("PORT", ""),
+        "NAME": os.environ.get("DB_NAME"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PWD"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
 
