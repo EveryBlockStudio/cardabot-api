@@ -10,6 +10,7 @@ Django==4.0.3
 django-filter==21.1
 djangorestframework==3.13.1
 executing==0.8.3
+graphql-core==3.2.1
 idna==3.3
 ipython==8.2.0
 jedi==0.18.1
@@ -22,13 +23,14 @@ pexpect==4.8.0
 pickleshare==0.7.5
 platformdirs==2.5.1
 prompt-toolkit==3.0.29
-psycopg2==2.9.3
+psycopg2-binary==2.9.3
 ptyprocess==0.7.0
 pure-eval==0.2.2
 Pygments==2.11.2
 python-dotenv==0.20.0
 pytz==2022.1
 requests==2.27.1
+sgqlc==15.0
 six==1.16.0
 sqlparse==0.4.2
 stack-data==0.2.0
