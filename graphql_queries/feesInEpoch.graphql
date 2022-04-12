@@ -1,0 +1,5 @@
+query feesInEpoch($epoch: Int!) {
+  epochs(where: { number: { _eq: $epoch } }) {
+    fees
+  }
+}
