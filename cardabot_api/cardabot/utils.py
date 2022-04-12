@@ -9,7 +9,7 @@ def lovelace_to_ada(lovelace_value: float) -> float:
 
 def calc_pool_saturation(pool_stake: int, circulating_supply: int, n_opt: int) -> float:
     # !TODO: add docstring
-    assert n_opt > 0
+    assert int(n_opt) > 0
 
-    saturation_point = circulating_supply / n_opt
-    return pool_stake / saturation_point
+    saturation_point = int(circulating_supply) / int(n_opt)
+    return int(pool_stake) / saturation_point

@@ -93,7 +93,7 @@ class ChatDetail(APIView):
 class Epoch(APIView):
     """Get information about the Cardano current epoch."""
 
-    def get(request, format=None):
+    def get(self, request, format=None):
         # gql queries
         currentEpochTip = GRAPHQL("currentEpochTip.graphql").get("data")
         epochInfo = GRAPHQL(
@@ -114,14 +114,22 @@ class Epoch(APIView):
         )
 
         # fmt: off
+        # convert lovelace values to ada if needed
+        fees_in_epoch = epochInfo["epochs"][0]["fees"]
+        active_stake = int(epochInfo["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"])
+        currency = request.query_params.get(QueryParameters.currency_format)
+        if currency and currency == "ADA":
+            fees_in_epoch = utils.lovelace_to_ada(fees_in_epoch)
+            active_stake = utils.lovelace_to_ada(active_stake)
+
         response = {
             "percentage": percentage * 100,
             "current_epoch": currentEpochTip["cardano"]["currentEpoch"]["number"],
             "current_slot": currentEpochTip["cardano"]["tip"]["slotNo"],
             "slot_in_epoch": currentEpochTip["cardano"]["tip"]["slotInEpoch"],
             "txs_in_epoch": int(epochInfo["epochs"][0]["transactionsCount"]),
-            "fees_in_epoch": utils.fmt_ada(epochInfo["epochs"][0]["fees"]),
-            "active_stake": utils.fmt_ada(epochInfo["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]),
+            "fees_in_epoch": fees_in_epoch,
+            "active_stake": active_stake,
             "n_active_stake_pools": int(epochInfo["stakePools_aggregate"]["aggregate"]["count"]),
             "remaning_time": remaining_time,
         }
@@ -158,28 +166,26 @@ class StakePool(APIView):
         ).get("data")
 
         try:
-            url = stakePoolDetails["stakePools"][0]["url"]  # pool not found
-        except IndexError:
+            url = stakePoolDetails["stakePools"][0]["url"]
+        except IndexError:  # pool not found
             raise Http404
 
-        res = requests.get(url)
+        res = requests.get(url)  # get pool metadata
         metadata = res.json() if res.json() else {}
 
         # fmt: off
-        stake = stakePoolDetails["stakePools"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]
+        stake = int(stakePoolDetails["stakePools"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"])
         total_stake = activeStake["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]
-        circ_supply = adaSupply["ada"]["supply"]["circulating"]
+        circulating_supply = adaSupply["ada"]["supply"]["circulating"]
         n_opt = activeStake["epochs"][0]["protocolParams"]["nOpt"]
 
         controlled_stake_percentage = (int(stake) / int(total_stake)) * 100
-        saturation = utils.calc_pool_saturation(
-            int(stake), int(circ_supply), int(n_opt)
-        )
+        saturation = utils.calc_pool_saturation(stake, circulating_supply, n_opt)
 
         # convert lovelace values to ada if needed
         currency = request.query_params.get(QueryParameters.currency_format)
-        fixed_cost = stakePoolDetails["stakePools"][0]["fixedCost"]
-        pledge = stakePoolDetails["stakePools"][0]["pledge"]
+        fixed_cost = int(stakePoolDetails["stakePools"][0]["fixedCost"])
+        pledge = int(stakePoolDetails["stakePools"][0]["pledge"])
         if  currency and currency.upper() == "ADA":
             fixed_cost = utils.lovelace_to_ada(fixed_cost)
             pledge = utils.lovelace_to_ada(pledge)
