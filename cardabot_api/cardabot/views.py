@@ -115,12 +115,13 @@ class Epoch(APIView):
 
         # fmt: off
         # convert lovelace values to ada if needed
-        fees_in_epoch = epochInfo["epochs"][0]["fees"]
-        active_stake = int(epochInfo["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"])
-        currency = request.query_params.get(QueryParameters.currency_format)
-        if currency and currency == "ADA":
-            fees_in_epoch = utils.lovelace_to_ada(fees_in_epoch)
-            active_stake = utils.lovelace_to_ada(active_stake)
+        fees_in_epoch, active_stake = utils.fmt_values_currency(
+            [
+                epochInfo["epochs"][0]["fees"],
+                epochInfo["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"],
+            ],
+            request.query_params.get(QueryParameters.currency_format),
+        )
 
         response = {
             "percentage": percentage * 100,
@@ -174,7 +175,7 @@ class StakePool(APIView):
         metadata = res.json() if res.json() else {}
 
         # fmt: off
-        stake = int(stakePoolDetails["stakePools"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"])
+        stake = stakePoolDetails["stakePools"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]
         total_stake = activeStake["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]
         circulating_supply = adaSupply["ada"]["supply"]["circulating"]
         n_opt = activeStake["epochs"][0]["protocolParams"]["nOpt"]
@@ -182,14 +183,15 @@ class StakePool(APIView):
         controlled_stake_percentage = (int(stake) / int(total_stake)) * 100
         saturation = utils.calc_pool_saturation(stake, circulating_supply, n_opt)
 
-        # convert lovelace values to ada if needed
-        currency = request.query_params.get(QueryParameters.currency_format)
-        fixed_cost = int(stakePoolDetails["stakePools"][0]["fixedCost"])
-        pledge = int(stakePoolDetails["stakePools"][0]["pledge"])
-        if  currency and currency.upper() == "ADA":
-            fixed_cost = utils.lovelace_to_ada(fixed_cost)
-            pledge = utils.lovelace_to_ada(pledge)
-            stake = utils.lovelace_to_ada(stake)
+        # convert values to ada if needed
+        fixed_cost, pledge, stake = utils.fmt_values_currency(
+            [
+                stakePoolDetails["stakePools"][0]["fixedCost"], 
+                stakePoolDetails["stakePools"][0]["pledge"],
+                stake,
+            ],
+            request.query_params.get(QueryParameters.currency_format),
+        )
 
         response = {
             "ticker": metadata.get("ticker", "NOT FOUND."),
