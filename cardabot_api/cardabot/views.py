@@ -168,7 +168,7 @@ class StakePool(APIView):
 
         try:
             url = stakePoolDetails["stakePools"][0]["url"]
-        except IndexError:  # pool not found
+        except (IndexError, TypeError):  # pool not found
             raise Http404
 
         res = requests.get(url)  # get pool metadata
