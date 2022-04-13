@@ -132,7 +132,7 @@ class Epoch(APIView):
             "fees_in_epoch": fees_in_epoch,
             "active_stake": active_stake,
             "n_active_stake_pools": int(epochInfo["stakePools_aggregate"]["aggregate"]["count"]),
-            "remaning_time": remaining_time,
+            "remaining_time": remaining_time,
         }
         # fmt: on
 

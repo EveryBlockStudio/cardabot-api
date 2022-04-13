@@ -20,8 +20,6 @@ class GraphQLClient:
         """Request data from a cardano graphql endpoint (EBS).
 
         Query text is obtained from `query_file` stored under the `graphql_queries` dir.
-        In case `query_file` is missing, it returns None.
-
         """
         with open(os.path.join(graphql_queries, query_file)) as f:
             query = f.read()
