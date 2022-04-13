@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from dataclasses import dataclass
+from urllib import response
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -115,7 +116,7 @@ class Epoch(APIView):
 
         # fmt: off
         # convert lovelace values to ada if needed
-        fees_in_epoch, active_stake = utils.fmt_values_currency(
+        fees_in_epoch, active_stake = utils.values_to_ada(
             [
                 epochInfo["epochs"][0]["fees"],
                 epochInfo["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"],
@@ -184,7 +185,7 @@ class StakePool(APIView):
         saturation = utils.calc_pool_saturation(stake, circulating_supply, n_opt)
 
         # convert values to ada if needed
-        fixed_cost, pledge, stake = utils.fmt_values_currency(
+        fixed_cost, pledge, stake = utils.values_to_ada(
             [
                 stakePoolDetails["stakePools"][0]["fixedCost"], 
                 stakePoolDetails["stakePools"][0]["pledge"],
@@ -210,5 +211,34 @@ class StakePool(APIView):
             "lifetime_blocks_count": int(stakePoolDetails["lifetimeBlocks"][0]["blocks_aggregate"]["aggregate"]["count"]),
         }
         # fmt: on
+
+        return Response({"data": response}, status=status.HTTP_200_OK)
+
+
+class NetParams(APIView):
+    """Get network parameters."""
+
+    def get(self, request, format=None):
+        epoch = GRAPHQL.this_epoch
+        netParams = GRAPHQL("netParams.graphql", {"epoch": epoch}).get("data")[
+            "epochs"
+        ][0]
+
+        min_pool_cost, min_utxo_value = utils.values_to_ada(
+            [
+                int(netParams["protocolParams"]["minPoolCost"]),
+                int(netParams["protocolParams"]["minUTxOValue"]),
+            ],
+            request.query_params.get(QueryParameters.currency_format),
+        )
+
+        response = {
+            "a0": netParams["protocolParams"]["a0"],
+            "min_pool_cost": min_pool_cost,
+            "min_utxo_value": min_utxo_value,
+            "n_opt": netParams["protocolParams"]["nOpt"],
+            "rho": netParams["protocolParams"]["rho"],
+            "tau": netParams["protocolParams"]["tau"],
+        }
 
         return Response({"data": response}, status=status.HTTP_200_OK)

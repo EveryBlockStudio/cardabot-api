@@ -6,6 +6,7 @@ from . import views
 graphql_urls = [
     path("epoch/", views.Epoch.as_view()),
     path("pool/<str:pool_id>/", views.StakePool.as_view()),
+    path("netparams/", views.NetParams.as_view()),
 ]
 
 urlpatterns = [
