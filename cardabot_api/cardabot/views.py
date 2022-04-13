@@ -242,3 +242,34 @@ class NetParams(APIView):
         }
 
         return Response({"data": response}, status=status.HTTP_200_OK)
+
+
+class Pots(APIView):
+    """Get pot infos."""
+
+    def get(self, request, format=None):
+        epoch = GRAPHQL.this_epoch
+        adaPot = GRAPHQL("adaPot.graphql", {"epoch": epoch}).get("data")["epochs"][0]
+
+        treasury, reserves, fees, rewards, utxo, deposits = utils.values_to_ada(
+            [
+                int(adaPot["adaPots"]["treasury"]),
+                int(adaPot["adaPots"]["reserves"]),
+                int(adaPot["adaPots"]["fees"]),
+                int(adaPot["adaPots"]["rewards"]),
+                int(adaPot["adaPots"]["utxo"]),
+                int(adaPot["adaPots"]["deposits"]),
+            ],
+            request.query_params.get(QueryParameters.currency_format),
+        )
+
+        response = {
+            "treasury": treasury,
+            "reserves": reserves,
+            "fees": fees,
+            "rewards": rewards,
+            "utxo": utxo,
+            "deposits": deposits,
+        }
+
+        return Response({"data": response}, status=status.HTTP_200_OK)
