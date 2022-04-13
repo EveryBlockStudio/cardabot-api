@@ -273,3 +273,37 @@ class Pots(APIView):
         }
 
         return Response({"data": response}, status=status.HTTP_200_OK)
+
+
+class Netstats(APIView):
+    """Get network stats."""
+
+    def get(self, request, format=None):
+        now = datetime.utcnow()
+        params = {
+            "epoch": GRAPHQL.this_epoch,
+            "time_1h": (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "time_24h": (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        netstats = GRAPHQL("netstats.graphql", params).get("data")
+
+        s = netstats["epochs"][0]["activeStake_aggregate"]["aggregate"]["sum"]["amount"]
+        stake_percentage = int(s) / int(netstats["ada"]["supply"]["circulating"]) * 100
+
+        max_block_size = netstats["epochs"][0]["protocolParams"]["maxBlockBodySize"]
+        block_size_avg_1h = netstats["blocks_avg_1h"]["aggregate"]["avg"]["size"]
+        block_size_avg_24h = netstats["blocks_avg_24h"]["aggregate"]["avg"]["size"]
+
+        response = {
+            "ada_in_circulation": utils.values_to_ada(
+                [int(netstats["ada"]["supply"]["circulating"])],
+                request.query_params.get(QueryParameters.currency_format),
+            )[0],
+            "percentage_in_stake": stake_percentage,
+            "stakepools": int(netstats["stakePools_aggregate"]["aggregate"]["count"]),
+            "delegations": int(netstats["delegations_aggregate"]["aggregate"]["count"]),
+            "load_1h": block_size_avg_1h / max_block_size * 100,
+            "load_24h": block_size_avg_24h / max_block_size * 100,
+        }
+
+        return Response({"data": response}, status=status.HTTP_200_OK)

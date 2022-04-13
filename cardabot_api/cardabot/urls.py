@@ -8,6 +8,7 @@ graphql_urls = [
     path("pool/<str:pool_id>/", views.StakePool.as_view()),
     path("netparams/", views.NetParams.as_view()),
     path("pots/", views.Pots.as_view()),
+    path("netstats/", views.Netstats.as_view()),
 ]
 
 urlpatterns = [
