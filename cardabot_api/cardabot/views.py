@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from urllib import response
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated  
 from rest_framework import status
 from django.http import Http404
 import requests
@@ -33,6 +34,8 @@ class Const:
 class ChatList(APIView):
     """List all chats in the database or create a new one."""
 
+    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+
     def get(self, request, format=None):
         chats = Chat.objects.all()
         if request.query_params.get(QueryParameters.client_filter) is not None:
@@ -53,6 +56,8 @@ class ChatList(APIView):
 
 class ChatDetail(APIView):
     """Retrieve, update or delete a chat instance."""
+
+    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
 
     def get(self, request, chat_id: str, format=None):
         chat = self._get_object_by_chat_id(
@@ -93,6 +98,8 @@ class ChatDetail(APIView):
 
 class Epoch(APIView):
     """Get information about the Cardano current epoch."""
+
+    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
 
     def get(self, request, format=None):
         # gql queries
@@ -142,6 +149,8 @@ class Epoch(APIView):
 
 class StakePool(APIView):
     """Get infos from a stake pool."""
+
+    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
 
     def get(self, request, pool_id: str, format=None):
         """Retrieve info from a stake pool.
@@ -218,6 +227,8 @@ class StakePool(APIView):
 class NetParams(APIView):
     """Get network parameters."""
 
+    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+
     def get(self, request, format=None):
         epoch = GRAPHQL.this_epoch
         netParams = GRAPHQL("netParams.graphql", {"epoch": epoch}).get("data")[
@@ -246,6 +257,8 @@ class NetParams(APIView):
 
 class Pots(APIView):
     """Get pot infos."""
+
+    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
 
     def get(self, request, format=None):
         epoch = GRAPHQL.this_epoch
@@ -277,6 +290,8 @@ class Pots(APIView):
 
 class Netstats(APIView):
     """Get network stats."""
+
+    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
 
     def get(self, request, format=None):
         now = datetime.utcnow()

@@ -43,7 +43,14 @@ INSTALLED_APPS = [
     "cardabot_api.payment",
     "tailwind",
     "django_browser_reload",
+    "rest_framework.authtoken",
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
