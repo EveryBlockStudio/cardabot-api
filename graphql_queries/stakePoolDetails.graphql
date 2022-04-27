@@ -12,14 +12,10 @@ query stakePoolDetails($pool: StakePoolID!, $epoch: Int!) {
         sum {
           amount
         }
-      }
-    }
-    pledge
-    delegators_aggregate {
-      aggregate {
         count
       }
     }
+    pledge
     fixedCost
     margin
     url

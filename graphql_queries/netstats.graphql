@@ -1,15 +1,10 @@
-query netstats($epoch: Int!, $time_1h: DateTime, $time_24h: DateTime) {
+query netstats($epoch: Int!, $time_15m:DateTime, $time_1h: DateTime, $time_24h: DateTime) {
   ada {
     supply {
       circulating
     }
   }
-  delegations_aggregate {
-    aggregate {
-      count
-    }
-  }
-  stakePools_aggregate {
+  stakePools_aggregate(where: { _not: { retirements: { announcedIn: {} } } }) {
     aggregate {
       count
     }

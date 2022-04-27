@@ -215,7 +215,7 @@ class StakePool(APIView):
             "saturation": saturation * 100,  # !TODO: fix
             "controlled_stake_percentage": controlled_stake_percentage,  # !TODO: fix
             "active_stake_amount": stake,  # !TODO: fix
-            "delegators_count": int(stakePoolDetails["stakePools"][0]["delegators_aggregate"]["aggregate"]["count"]),
+            "delegators_count": int(stakePoolDetails["stakePools"][0]["activeStake_aggregate"]["aggregate"]["count"]),
             "epoch_blocks_count": int(stakePoolDetails["blocksThisEpoch"][0]["blocks_aggregate"]["aggregate"]["count"]),
             "lifetime_blocks_count": int(stakePoolDetails["lifetimeBlocks"][0]["blocks_aggregate"]["aggregate"]["count"]),
         }
