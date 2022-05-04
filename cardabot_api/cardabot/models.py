@@ -3,7 +3,7 @@ from django.db import models
 
 class CardaBotUser(models.Model):
     # https://cips.cardano.org/cips/cip19/#userfacingencoding
-    stake_key = models.CharField(max_length=256)
+    stake_key = models.CharField(max_length=256, unique=True)
 
 
 class Chat(models.Model):
