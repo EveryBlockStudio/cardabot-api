@@ -3,12 +3,6 @@ from django.db import models
 
 class Chat(models.Model):
     ebs_poolid = "pool1ndtsklata6rphamr6jw2p3ltnzayq3pezhg0djvn7n5js8rqlzh"  # bech32
-    supported_languages = (
-        ("PT", "Portuguese"),
-        ("EN", "English"),
-        ("KR", "Korean"),
-        ("JP", "Japanese"),
-    )
     clients = (("TELEGRAM", "Telegram"), ("", "None"))
 
     chat_id = models.CharField(
@@ -25,9 +19,8 @@ class Chat(models.Model):
 
     default_language = models.CharField(
         max_length=2,
-        choices=supported_languages,
-        default="EN",
-        blank=False,
+        default="",
+        blank=True,
         null=False,
     )
 
