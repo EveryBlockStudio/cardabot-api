@@ -5,6 +5,9 @@ class CardaBotUser(models.Model):
     # https://cips.cardano.org/cips/cip19/#userfacingencoding
     stake_key = models.CharField(max_length=256, unique=True)
 
+    def __str__(self) -> str:
+        return self.stake_key
+
 
 class Chat(models.Model):
     ebs_poolid = "pool1ndtsklata6rphamr6jw2p3ltnzayq3pezhg0djvn7n5js8rqlzh"  # bech32
@@ -38,6 +41,9 @@ class Chat(models.Model):
         blank=False,
         null=False,
     )
+
+    def __str__(self) -> str:
+        return self.chat_id
 
     class Meta:
         unique_together = ("chat_id", "client")

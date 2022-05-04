@@ -4,13 +4,13 @@ from dataclasses import dataclass
 from urllib import response
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated  
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.http import Http404
 import requests
 
-from .models import Chat
-from .serializers import ChatSerializer
+from .models import Chat, CardaBotUser
+from .serializers import ChatSerializer, CardaBotUserSerializer
 from .graphql_client import GRAPHQL
 from . import utils
 
@@ -24,6 +24,13 @@ class QueryParameters:
 
 
 @dataclass
+class BodyParameters:
+    """Set of possible body parameters."""
+
+    cardabot_user = "cardabot_user"
+
+
+@dataclass
 class Const:
     """Set of constant variables."""
 
@@ -31,10 +38,56 @@ class Const:
     EPOCH_DURATION = 5  # days
 
 
+class CardaBotUserList(APIView):
+    """
+    List all users, or create a new user.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        """Return a list of all users."""
+        users = CardaBotUser.objects.all()
+        serializer = CardaBotUserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+        """Create a new user."""
+        serializer = CardaBotUserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CardaBotUserDetail(APIView):
+    """Retrieve or delete a user."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self, pk: int):
+        try:
+            return CardaBotUser.objects.get(pk=pk)
+        except CardaBotUser.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk: int, format=None):
+        user = self.get_object(pk)
+        serializer = CardaBotUserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int, format=None):
+        user = self.get_object(pk)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ChatList(APIView):
     """List all chats in the database or create a new one."""
 
-    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
 
     def get(self, request, format=None):
         chats = Chat.objects.all()
@@ -57,7 +110,9 @@ class ChatList(APIView):
 class ChatDetail(APIView):
     """Retrieve, update or delete a chat instance."""
 
-    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
 
     def get(self, request, chat_id: str, format=None):
         chat = self._get_object_by_chat_id(
@@ -77,6 +132,18 @@ class ChatDetail(APIView):
         chat = self._get_object_by_chat_id(
             chat_id, request.query_params.get(QueryParameters.client_filter)
         )
+
+        cardabot_user = request.data.get(BodyParameters.cardabot_user)
+        if cardabot_user:
+            if CardaBotUser.objects.filter(stake_key=cardabot_user).exists():
+                chat.cardabot_user = CardaBotUser.objects.get(stake_key=cardabot_user)
+                chat.save()
+            else:
+                return Response(
+                    {"error": "CardaBotUser not found"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         serializer = ChatSerializer(chat, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -99,7 +166,9 @@ class ChatDetail(APIView):
 class Epoch(APIView):
     """Get information about the Cardano current epoch."""
 
-    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
 
     def get(self, request, format=None):
         # gql queries
@@ -150,7 +219,9 @@ class Epoch(APIView):
 class StakePool(APIView):
     """Get infos from a stake pool."""
 
-    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
 
     def get(self, request, pool_id: str, format=None):
         """Retrieve info from a stake pool.
@@ -227,7 +298,9 @@ class StakePool(APIView):
 class NetParams(APIView):
     """Get network parameters."""
 
-    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
 
     def get(self, request, format=None):
         epoch = GRAPHQL.this_epoch
@@ -258,7 +331,9 @@ class NetParams(APIView):
 class Pots(APIView):
     """Get pot infos."""
 
-    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
 
     def get(self, request, format=None):
         epoch = GRAPHQL.this_epoch
@@ -291,7 +366,9 @@ class Pots(APIView):
 class Netstats(APIView):
     """Get network stats."""
 
-    permission_classes = (IsAuthenticated,) # only authenticated users can access this view
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
 
     def get(self, request, format=None):
         now = datetime.utcnow()
@@ -318,7 +395,9 @@ class Netstats(APIView):
             )[0],
             "percentage_in_stake": stake_percentage,
             "stakepools": int(netstats["stakePools_aggregate"]["aggregate"]["count"]),
-            "delegations": int(netstats["epochs"][0]["activeStake_aggregate"]["aggregate"]["count"]),
+            "delegations": int(
+                netstats["epochs"][0]["activeStake_aggregate"]["aggregate"]["count"]
+            ),
             "load_15m": block_size_avg_15m / max_block_size * 100,
             "load_1h": block_size_avg_1h / max_block_size * 100,
             "load_24h": block_size_avg_24h / max_block_size * 100,
