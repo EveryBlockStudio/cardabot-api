@@ -1,13 +1,21 @@
 from django.db import models
 
 
+class CardaBotUser(models.Model):
+    # https://cips.cardano.org/cips/cip19/#userfacingencoding
+    stake_key = models.CharField(max_length=256)
+
+
 class Chat(models.Model):
     ebs_poolid = "pool1ndtsklata6rphamr6jw2p3ltnzayq3pezhg0djvn7n5js8rqlzh"  # bech32
     clients = (("TELEGRAM", "Telegram"), ("", "None"))
 
-    chat_id = models.CharField(
-        max_length=256,
+    cardabot_user = models.ForeignKey(
+        CardaBotUser, on_delete=models.SET_NULL, null=True
     )
+
+    # telegram: `chat_id` is the same as `user_id` for private chats
+    chat_id = models.CharField(max_length=256)
 
     client = models.CharField(
         max_length=16,
