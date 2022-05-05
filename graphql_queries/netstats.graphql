@@ -1,15 +1,10 @@
-query netstats($epoch: Int!, $time_1h: DateTime, $time_24h: DateTime) {
+query netstats($epoch: Int!, $time_15m:DateTime, $time_1h: DateTime, $time_24h: DateTime) {
   ada {
     supply {
       circulating
     }
   }
-  delegations_aggregate {
-    aggregate {
-      count
-    }
-  }
-  stakePools_aggregate {
+  stakePools_aggregate(where: { _not: { retirements: { announcedIn: {} } } }) {
     aggregate {
       count
     }
@@ -20,10 +15,18 @@ query netstats($epoch: Int!, $time_1h: DateTime, $time_24h: DateTime) {
         sum {
           amount
         }
+        count
       }
     }
     protocolParams {
       maxBlockBodySize
+    }
+  }
+  blocks_avg_15m: blocks_aggregate(where: { forgedAt: { _gte: $time_15m } }) {
+    aggregate {
+      avg {
+        size
+      }
     }
   }
   blocks_avg_1h: blocks_aggregate(where: { forgedAt: { _gte: $time_1h } }) {

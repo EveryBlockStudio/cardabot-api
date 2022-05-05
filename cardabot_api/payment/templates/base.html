@@ -1,0 +1,38 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html data-theme="light" lang="en">
+	<head>
+    <title>Django Tailwind</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<link href="https://cdn.jsdelivr.net/npm/daisyui@2.14.1/dist/full.css" rel="stylesheet" type="text/css" />
+		<!-- <script src="https://cdn.tailwindcss.com"></script> -->
+		{% tailwind_css %}
+	</head>
+
+	<body class="bg-gray-50 font-serif leading-normal tracking-normal">
+		<div class="container mx-auto">
+			<section class="flex items-center justify-center h-screen">
+				
+
+
+					<div class="container mx-auto">
+						
+						<button class="btn gap-2">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+							Button
+						  </button>
+						<button class="btn glass">Glass button</button>
+					
+						<div class="tabs tabs-boxed">
+							<a class="tab">Tab 1</a> 
+							<a class="tab tab-active">Tab 2</a> 
+							<a class="tab">Tab 3</a>
+						</div>
+					</div>
+				  </div>
+			</section>
+		</div>
+	</body>
+</html>

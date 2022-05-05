@@ -14,8 +14,8 @@ query epochInfo($epoch: Int!) {
       nOpt
     }
   }
-  stakePools_aggregate {
-      aggregate {
+  stakePools_aggregate(where: { _not: { retirements: { announcedIn: {} } } }) {
+    aggregate { 
         count
       }
     }

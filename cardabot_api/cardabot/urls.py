@@ -14,6 +14,8 @@ graphql_urls = [
 urlpatterns = [
     path("chats/", views.ChatList.as_view()),
     path("chats/<str:chat_id>/", views.ChatDetail.as_view()),
+    path("users/", views.CardaBotUserList.as_view()),
+    path("users/<int:pk>/", views.CardaBotUserDetail.as_view()),
     *graphql_urls,
 ]
 
