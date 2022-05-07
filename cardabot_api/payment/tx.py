@@ -37,7 +37,6 @@ def _addr_balance(address: str) -> int:
     """Get the total balance (lovelace) of an address."""
 
     amounts = ChainContext.api.address(address).amount
-    print(amounts)
     return sum(
         [
             int(amount.quantity)
@@ -62,7 +61,7 @@ def select_pay_addr(
         A list of pay addresses necessary to complete the tx, in bech32 format.
 
     Raises:
-        ApiError: if the verification is not successful.
+        ApiError: if the pay addr is not valid.
     """
 
     pay_addrs_balance = sorted(
@@ -77,7 +76,7 @@ def select_pay_addr(
     for addr, balance in pay_addrs_balance:
         bal_sum += balance
         sel_addrs.append(addr)
-        if bal_sum >= total_amount:
+        if bal_sum >= total_amount + _to_llace(float(os.environ["FEE_UBOUND"])):
             break
 
     return sel_addrs
@@ -99,10 +98,15 @@ def build_unsigned_transaction(
         ApiError: if the transaction is not built successfully.
 
     """
-    senders = [
+    pay_addresses = [
         item.address
         for item in ChainContext.api.account_addresses(sender_stake_address)
     ]
+
+    senders = select_pay_addr(
+        pay_addresses=pay_addresses,
+        recipients=recipients,
+    )
 
     input_addresses = [Address.decode(sender) for sender in senders]
     change_address = input_addresses[0]  # return change to the first sender address
