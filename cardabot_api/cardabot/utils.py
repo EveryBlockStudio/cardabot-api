@@ -1,13 +1,18 @@
 """Helper functions for the cardabot endpoints."""
 
 from dataclasses import dataclass
-from blockfrost import BlockFrostApi
+from blockfrost import BlockFrostApi, ApiError, ApiUrls
 import os
 
 
 @dataclass
 class BlockFrostAPI:
-    api = BlockFrostApi(project_id=os.environ.get("BLOCKFROST_ID"))
+    base_url = (
+        ApiUrls.testnet.value
+        if os.environ["NETWORK"] == "testnet"
+        else ApiUrls.mainnet.value
+    )
+    api = BlockFrostApi(project_id=os.environ.get("BLOCKFROST_ID"), base_url=base_url)
 
 
 def lovelace_to_ada(lovelace_value: int) -> float:
@@ -39,5 +44,15 @@ def check_pool_is_valid(pool_id: str) -> bool:
     try:
         BlockFrostAPI.api.pool(pool_id=pool_id)
         return True
-    except Exception:
+    except ApiError:
+        return False
+
+
+def check_stake_addr_is_valid(stake_addr: str) -> bool:
+    """Check if stake_addr points to a valid stake address or not."""
+
+    try:
+        BlockFrostAPI.api.account_addresses(stake_addr)
+        return True
+    except ApiError:
         return False
