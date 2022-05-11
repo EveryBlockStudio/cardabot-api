@@ -1,5 +1,14 @@
 """Helper functions for the cardabot endpoints."""
 
+from dataclasses import dataclass
+from blockfrost import BlockFrostApi
+import os
+
+
+@dataclass
+class BlockFrostAPI:
+    api = BlockFrostApi(project_id=os.environ.get("BLOCKFROST_ID"))
+
 
 def lovelace_to_ada(lovelace_value: int) -> float:
     """Take a value in lovelace and return it in ADA."""
@@ -22,3 +31,13 @@ def calc_pool_saturation(pool_stake: int, circulating_supply: int, n_opt: int) -
 
     saturation_point = int(circulating_supply) / int(n_opt)
     return int(pool_stake) / saturation_point
+
+
+def check_pool_is_valid(pool_id: str) -> bool:
+    """Check if pool_id points to a valid pool or not."""
+
+    try:
+        BlockFrostAPI.api.pool(pool_id=pool_id)
+        return True
+    except Exception:
+        return False
