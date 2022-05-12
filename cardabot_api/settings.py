@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "cardabot_api.cardabot",
     "cardabot_api.payment",
+    "cardabot_api.wallet_connection",
     "tailwind",
     "django_browser_reload",
     "rest_framework.authtoken",
@@ -68,7 +69,7 @@ ROOT_URLCONF = "cardabot_api.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "payment/templates")],
+        "DIRS": [os.path.join(BASE_DIR, "wallet_connection/templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
