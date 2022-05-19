@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Chat, CardaBotUser
-from .utils import check_pool_is_valid
+from .utils import check_pool_is_valid, check_stake_addr_is_valid
 
 
 class ChatSerializer(serializers.ModelSerializer):
@@ -24,6 +24,13 @@ class ChatSerializer(serializers.ModelSerializer):
 
 
 class CardaBotUserSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        if not check_stake_addr_is_valid(attrs["stake_key"]):
+            raise serializers.ValidationError(
+                "Field `stake_key` is not a valid stake address."
+            )
+        return attrs
+
     class Meta:
         model = CardaBotUser
         fields = ("id", "stake_key")
