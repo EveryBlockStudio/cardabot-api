@@ -53,11 +53,25 @@ class CardaBotUserList(APIView):
 
     def post(self, request, format=None):
         """Create a new user."""
-        serializer = CardaBotUserSerializer(data=request.data)
+        serialized = self.serialize_and_create_new_user(request.data)
+        return Response(serialized[0], status=serialized[1])
+
+    @staticmethod
+    def serialize_and_create_new_user(data):
+        """Create a new user.
+
+        Args:
+            data (dict): The data to be serialized and saved.
+
+        Returns:
+           tuple: The serialized data and the status code.
+        """
+        serializer = CardaBotUserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return (serializer.data, status.HTTP_201_CREATED)
+
+        return (serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
 class CardaBotUserDetail(APIView):
@@ -104,6 +118,7 @@ class ChatList(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -135,13 +150,14 @@ class ChatDetail(APIView):
 
         cardabot_user = request.data.get(BodyParameters.cardabot_user)
         if cardabot_user:
-            if CardaBotUser.objects.filter(stake_key=cardabot_user).exists():
-                chat.cardabot_user = CardaBotUser.objects.get(stake_key=cardabot_user)
-                chat.save()
-            else:
+            try:
+                chat = self.update_chat_cardabot_user(
+                    chat=chat, stake_address=cardabot_user
+                )
+            except Http404:
                 return Response(
-                    {"error": "CardaBotUser not found"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": "CardaBot user not found"},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
 
         serializer = ChatSerializer(chat, data=request.data, partial=True)
@@ -149,6 +165,15 @@ class ChatDetail(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def update_chat_cardabot_user(chat: Chat, stake_address: str):
+        if not CardaBotUser.objects.filter(stake_key=stake_address).exists():
+            raise Http404("CardaBotUser not found.")
+
+        chat.cardabot_user = CardaBotUser.objects.get(stake_key=stake_address)
+        chat.save()
+        return chat
 
     @staticmethod
     def _get_object_by_chat_id(chat_id: str, client: str = None):
