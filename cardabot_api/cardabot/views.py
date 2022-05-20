@@ -1,18 +1,18 @@
+import secrets
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from dataclasses import dataclass
-from urllib import response
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from django.http import Http404
 import requests
+from django.http import Http404
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Chat, CardaBotUser
-from .serializers import ChatSerializer, CardaBotUserSerializer
-from .graphql_client import GRAPHQL
 from . import utils
+from .graphql_client import GRAPHQL
+from .models import CardaBotUser, Chat
+from .serializers import CardaBotUserSerializer, ChatSerializer, TemporyTokenSerializer
 
 
 @dataclass
@@ -150,7 +150,8 @@ class ChatDetail(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def _get_object_by_chat_id(self, chat_id: str, client: str = None):
+    @staticmethod
+    def _get_object_by_chat_id(chat_id: str, client: str = None):
         """Return chat object by chat_id and client (if provided)."""
         chats = Chat.objects.all()
         if client is not None:
@@ -161,6 +162,28 @@ class ChatDetail(APIView):
             # !TODO: how to deal with MultipleObjectsReturned?
         except Chat.DoesNotExist:
             raise Http404
+
+
+class TemporaryChatToken(APIView):
+    """Generate temporary wallet connection token for a chat."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, chat_id: str, format=None):
+        """Generate a temporary token for this chat_id."""
+        chat = ChatDetail._get_object_by_chat_id(
+            chat_id, request.query_params.get(QueryParameters.client_filter)
+        )
+
+        tmp_token = secrets.token_urlsafe(nbytes=32)
+        serializer = TemporyTokenSerializer(
+            chat, data={"tmp_token": tmp_token}, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class Epoch(APIView):

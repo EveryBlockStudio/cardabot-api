@@ -17,6 +17,10 @@ class Chat(models.Model):
         CardaBotUser, on_delete=models.SET_NULL, null=True
     )
 
+    tmp_token = models.CharField(
+        max_length=56, unique=True, null=True
+    )  # temporary connection token
+
     # telegram: `chat_id` is the same as `user_id` for private chats
     chat_id = models.CharField(max_length=256)
 

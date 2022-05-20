@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Chat, CardaBotUser
+
+from .models import CardaBotUser, Chat
 from .utils import check_pool_is_valid, check_stake_addr_is_valid
 
 
@@ -20,6 +21,7 @@ class ChatSerializer(serializers.ModelSerializer):
             "default_language",
             "default_pool_id",
             "cardabot_user_id",
+            "tmp_token",
         )
 
 
@@ -34,3 +36,9 @@ class CardaBotUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CardaBotUser
         fields = ("id", "stake_key")
+
+
+class TemporyTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chat
+        fields = ("tmp_token",)
