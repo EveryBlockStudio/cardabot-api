@@ -32,7 +32,7 @@ class BodyParameters:
     """Set of possible body parameters."""
 
     cardabot_user = "cardabot_user"  # holds user's stake address
-    token = "token"
+    tmp_token = "token"
 
 
 @dataclass
@@ -222,7 +222,7 @@ class CreateAndConnectUser(APIView):
 
     def post(self, request, format=None):
         # get chat
-        tmp_token = request.data.get(BodyParameters.token)
+        tmp_token = request.data.get(BodyParameters.tmp_token)
         print(tmp_token)
         try:
             chat = self._get_chat_by_tmp_token(tmp_token)
