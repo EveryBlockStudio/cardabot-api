@@ -32,7 +32,7 @@ class BodyParameters:
     """Set of possible body parameters."""
 
     cardabot_user = "cardabot_user"  # holds user's stake address
-    tmp_token = "token"
+    tmp_token = "tmp_token"
 
 
 @dataclass
