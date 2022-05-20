@@ -17,6 +17,7 @@ urlpatterns = [
     path("users/", views.CardaBotUserList.as_view()),
     path("users/<int:pk>/", views.CardaBotUserDetail.as_view()),
     path("chats/<str:chat_id>/token/", views.TemporaryChatToken.as_view()),
+    path("connect/", views.CreateAndConnectUser.as_view()),
     *graphql_urls,
 ]
 

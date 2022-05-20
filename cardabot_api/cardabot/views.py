@@ -12,7 +12,11 @@ from rest_framework.views import APIView
 from . import utils
 from .graphql_client import GRAPHQL
 from .models import CardaBotUser, Chat
-from .serializers import CardaBotUserSerializer, ChatSerializer, TemporyTokenSerializer
+from .serializers import (
+    CardaBotUserSerializer,
+    ChatSerializer,
+    TemporaryTokenSerializer,
+)
 
 
 @dataclass
@@ -27,7 +31,8 @@ class QueryParameters:
 class BodyParameters:
     """Set of possible body parameters."""
 
-    cardabot_user = "cardabot_user"
+    cardabot_user = "cardabot_user"  # holds user's stake address
+    token = "token"
 
 
 @dataclass
@@ -54,7 +59,7 @@ class CardaBotUserList(APIView):
     def post(self, request, format=None):
         """Create a new user."""
         serialized = self.serialize_and_create_new_user(request.data)
-        return Response(serialized[0], status=serialized[1])
+        return Response(serialized["res"], status=serialized["status"])
 
     @staticmethod
     def serialize_and_create_new_user(data):
@@ -69,9 +74,8 @@ class CardaBotUserList(APIView):
         serializer = CardaBotUserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return (serializer.data, status.HTTP_201_CREATED)
-
-        return (serializer.errors, status.HTTP_400_BAD_REQUEST)
+            return {"res": serializer.data, "status": status.HTTP_201_CREATED}
+        return {"res": serializer.errors, "status": status.HTTP_400_BAD_REQUEST}
 
 
 class CardaBotUserDetail(APIView):
@@ -201,7 +205,7 @@ class TemporaryChatToken(APIView):
         )
 
         tmp_token = secrets.token_urlsafe(nbytes=32)
-        serializer = TemporyTokenSerializer(
+        serializer = TemporaryTokenSerializer(
             chat, data={"tmp_token": tmp_token}, partial=True
         )
         if serializer.is_valid():
@@ -209,6 +213,57 @@ class TemporaryChatToken(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CreateAndConnectUser(APIView):
+    """Connect an existing CardaBotUser with an Chat using the temporay token."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, format=None):
+        # get chat
+        tmp_token = request.data.get(BodyParameters.token)
+        print(tmp_token)
+        try:
+            chat = self._get_chat_by_tmp_token(tmp_token)
+        except Http404:
+            return Response(
+                {"error": "Temporary token not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # create cardabot user
+        stake_address = request.data.get(BodyParameters.cardabot_user)
+        serialized_user = CardaBotUserList.serialize_and_create_new_user(
+            {"stake_key": stake_address}
+        )
+        if serialized_user["status"] != status.HTTP_201_CREATED:
+            return Response(serialized_user["res"], serialized_user["status"])
+
+        # connect chat and user
+        try:
+            ChatDetail.update_chat_cardabot_user(chat, stake_address)
+        except Http404:
+            return Response(
+                {"error": "CardaBot user not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        chat.tmp_token = None  # reset token
+        chat.save()
+
+        return Response(
+            {"success": f"CardaBotUser created and connected to chat {chat.chat_id}"},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def _get_chat_by_tmp_token(self, tmp_token: str):
+        """Return chat object by tmp_token."""
+        if not tmp_token:
+            raise Http404
+
+        try:
+            return Chat.objects.get(tmp_token=tmp_token)
+        except Chat.DoesNotExist:
+            raise Http404
 
 
 class Epoch(APIView):

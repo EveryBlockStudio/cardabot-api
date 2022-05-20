@@ -40,7 +40,7 @@ class CardaBotUserSerializer(serializers.ModelSerializer):
         fields = ("id", "stake_key")
 
 
-class TemporyTokenSerializer(serializers.ModelSerializer):
+class TemporaryTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
         fields = ("tmp_token",)
