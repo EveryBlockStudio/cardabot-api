@@ -45,11 +45,12 @@ INSTALLED_APPS = [
     "tailwind",
     "django_browser_reload",
     "rest_framework.authtoken",
+    "django_crontab",
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
     ],
 }
 
@@ -63,6 +64,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
+
+CRONJOBS = [("*/15 * * * *", "cardabot_api.cardabot.cron.reset_cardabot_tmp_token")]
 
 ROOT_URLCONF = "cardabot_api.urls"
 
@@ -137,16 +140,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "cardabot_api/payment/static")
-    ]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "cardabot_api/payment/static")]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-TAILWIND_APP_NAME = 'cardabot_api.payment'
+TAILWIND_APP_NAME = "cardabot_api.payment"
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
