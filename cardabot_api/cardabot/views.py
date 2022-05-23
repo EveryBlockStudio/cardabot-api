@@ -234,7 +234,6 @@ class CreateAndConnectUser(APIView):
     def post(self, request, format=None):
         # get chat
         tmp_token = request.data.get(BodyParameters.tmp_token)
-        print(tmp_token)
         try:
             chat = self._get_chat_by_tmp_token(tmp_token)
         except Http404:
