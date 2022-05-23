@@ -216,7 +216,18 @@ class TemporaryChatToken(APIView):
 
 
 class CreateAndConnectUser(APIView):
-    """Connect an existing CardaBotUser with an Chat using the temporay token."""
+    """Connect a CardaBotUser with a Chat using the temporay token.
+
+    If the CardaBotUser already exists, there is no need to create a new one -- the chat
+    will be connected to it.
+
+    Delete the temporary token after the connection is established.
+
+    Raises:
+        Http404: if the temporary token is not found.
+        Http400: if stake address is not valid (not a valid CardaBotUser).
+
+    """
 
     permission_classes = (IsAuthenticated,)
 
@@ -236,8 +247,18 @@ class CreateAndConnectUser(APIView):
         serialized_user = CardaBotUserList.serialize_and_create_new_user(
             {"stake_key": stake_address}
         )
+
         if serialized_user["status"] != status.HTTP_201_CREATED:
-            return Response(serialized_user["res"], serialized_user["status"])
+            # if stake_key already exists, do nothing. otherwise, return error
+            # if stake_key already exists, this expects the following error:
+            # "{
+            #     "stake_key": [
+            #         "carda bot user with this stake key already exists."
+            #     ]
+            # }
+            # "
+            if not serialized_user["res"].get("stake_key"):
+                return Response(serialized_user["res"], serialized_user["status"])
 
         # connect chat and user
         try:
@@ -251,7 +272,9 @@ class CreateAndConnectUser(APIView):
         chat.save()
 
         return Response(
-            {"success": f"CardaBotUser created and connected to chat {chat.chat_id}"},
+            {
+                "success": f"CardaBotUser `{stake_address}` connected to chat `{chat.chat_id}`"
+            },
             status=status.HTTP_201_CREATED,
         )
 
