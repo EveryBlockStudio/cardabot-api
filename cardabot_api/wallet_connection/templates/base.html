@@ -12,26 +12,37 @@
 		{% tailwind_css %}
 		<script> 
 			async function connectWallet() {
-				let api = await window.cardano.nami.enable();
-				let addr = await api.getRewardAddresses();
-
-				// this is just an example of how to call a REST api from JS
-				const response = await fetch(
-					'http://127.0.0.1:8000/api/pots?' + new URLSearchParams({'currency_format': 'ADA'}), 
-					{
-						method: 'GET',
-						// body: 
-						headers: {
-							'Content-Type': 'application/json',
-							// 'Authorization': 'Token XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				try {
+					var api = await window.cardano.nami.enable();
+				} catch (e){
+					console.error(e);
+				} 
+				
+				if (api != null) {
+					var stakeKey = await api.getRewardAddresses();
+					
+					const token = new URLSearchParams(window.location.search).get('token');
+					const response = await fetch(
+						'http://127.0.0.1:8000/api/connect/', 
+						{
+							method: 'POST',
+							body: JSON.stringify({
+								tmp_token: token,
+								cardabot_user: stakeKey[0]
+							}),
+							headers: {
+								'Content-Type': 'application/json',
+							}
 						}
+					);
+					if (response.ok) {
+						const myJson = await response.json(); //extract JSON from the http response
+						alert("Your wallet is now connected to CardaBot!");
+					} else {
+						console.log("Wallet not connected");
 					}
-				);
-				const myJson = await response.json(); //extract JSON from the http response
-				console.log(myJson)
-				// do something with myJson
-
-				console.log(addr);
+					
+				}
 			}
 		</script>
 

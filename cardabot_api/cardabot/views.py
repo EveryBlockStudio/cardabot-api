@@ -18,6 +18,7 @@ from .serializers import (
     TemporaryTokenSerializer,
 )
 
+from pycardano import VerificationKeyHash, Address, Network
 
 @dataclass
 class QueryParameters:
@@ -216,7 +217,7 @@ class TemporaryChatToken(APIView):
 
 
 class CreateAndConnectUser(APIView):
-    """Connect a CardaBotUser with a Chat using the temporay token.
+    """Connect a CardaBotUser with a Chat using the temporary token.
 
     If the CardaBotUser already exists, there is no need to create a new one -- the chat
     will be connected to it.
@@ -229,7 +230,7 @@ class CreateAndConnectUser(APIView):
 
     """
 
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         # get chat
@@ -242,11 +243,13 @@ class CreateAndConnectUser(APIView):
             )
 
         # create cardabot user
-        stake_address = request.data.get(BodyParameters.cardabot_user)
-        serialized_user = CardaBotUserList.serialize_and_create_new_user(
-            {"stake_key": stake_address}
-        )
+        staking_hash_from_wallet = request.data.get(BodyParameters.cardabot_user)
+        staking_hash = VerificationKeyHash(bytes.fromhex(staking_hash_from_wallet[2:]))
+        staking_address = Address(staking_part=staking_hash, network=Network.MAINNET).encode()
 
+        serialized_user = CardaBotUserList.serialize_and_create_new_user(
+            {"stake_key": staking_address}
+        )
         if serialized_user["status"] != status.HTTP_201_CREATED:
             # if stake_key already exists, do nothing. otherwise, return error
             # if stake_key already exists, this expects the following error:
@@ -255,13 +258,12 @@ class CreateAndConnectUser(APIView):
             #         "carda bot user with this stake key already exists."
             #     ]
             # }
-            # "
             if not serialized_user["res"].get("stake_key"):
                 return Response(serialized_user["res"], serialized_user["status"])
 
         # connect chat and user
         try:
-            ChatDetail.update_chat_cardabot_user(chat, stake_address)
+            ChatDetail.update_chat_cardabot_user(chat, staking_address)
         except Http404:
             return Response(
                 {"error": "CardaBot user not found"}, status=status.HTTP_404_NOT_FOUND
@@ -272,7 +274,7 @@ class CreateAndConnectUser(APIView):
 
         return Response(
             {
-                "success": f"CardaBotUser `{stake_address}` connected to chat `{chat.chat_id}`"
+                "success": f"CardaBotUser `{staking_address}` connected to chat `{chat.chat_id}`"
             },
             status=status.HTTP_201_CREATED,
         )
