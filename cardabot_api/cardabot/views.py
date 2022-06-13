@@ -1,9 +1,11 @@
+import os
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import requests
 from django.http import Http404
+from pycardano import Address, Network, VerificationKeyHash
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -18,7 +20,6 @@ from .serializers import (
     TemporaryTokenSerializer,
 )
 
-from pycardano import VerificationKeyHash, Address, Network
 
 @dataclass
 class QueryParameters:
@@ -230,7 +231,7 @@ class CreateAndConnectUser(APIView):
 
     """
 
-    #permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         # get chat
@@ -244,8 +245,18 @@ class CreateAndConnectUser(APIView):
 
         # create cardabot user
         staking_hash_from_wallet = request.data.get(BodyParameters.cardabot_user)
-        staking_hash = VerificationKeyHash(bytes.fromhex(staking_hash_from_wallet[2:]))
-        staking_address = Address(staking_part=staking_hash, network=Network.MAINNET).encode()
+
+        begin_idx = 2
+        staking_hash = VerificationKeyHash(
+            bytes.fromhex(staking_hash_from_wallet[begin_idx:])
+        )
+
+        staking_address = Address(
+            staking_part=staking_hash,
+            network=Network.MAINNET
+            if os.environ["NETWORK"].lower() == "mainnet"
+            else Network.TESTNET,
+        ).encode()
 
         serialized_user = CardaBotUserList.serialize_and_create_new_user(
             {"stake_key": staking_address}
