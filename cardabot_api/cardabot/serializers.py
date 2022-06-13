@@ -9,7 +9,7 @@ class ChatSerializer(serializers.ModelSerializer):
         pool = attrs.get("default_pool_id")
         if pool and not check_pool_is_valid(pool):
             raise serializers.ValidationError(
-                "Field `default_pool_id` is not a valid pool id."
+                f"Field `default_pool_id`={pool} is not a valid pool id."
             )
         return attrs
 
@@ -31,7 +31,7 @@ class CardaBotUserSerializer(serializers.ModelSerializer):
         stake_addr = attrs.get("stake_key")
         if stake_addr and not check_stake_addr_is_valid(stake_addr):
             raise serializers.ValidationError(
-                "Field `stake_key` is not a valid stake address."
+                f"Field `stake_key`={stake_addr} is not a valid stake address."
             )
         return attrs
 
