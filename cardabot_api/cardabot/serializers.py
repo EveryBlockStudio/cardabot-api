@@ -47,6 +47,16 @@ class TemporaryTokenSerializer(serializers.ModelSerializer):
 
 
 class UnsignedTransactionSerializer(serializers.ModelSerializer):
+    receiver_chat_id = serializers.CharField(source="receiver_chat.chat_id")
+
     class Meta:
         model = UnsignedTransaction
-        fields = ("tx_id",)
+        fields = (
+            "tx_id",
+            "tx_cbor",
+            # "sender_chat",
+            # "receiver_chat",
+            "receiver_chat_id",
+            "amount",
+            "username_receiver",
+        )

@@ -5,9 +5,10 @@ from datetime import datetime, timedelta
 
 import requests
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from pycardano import Address, Network, VerificationKeyHash
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -45,16 +46,6 @@ class Const:
 
     SLOTS_EPOCH = 432000  # total slots in one epoch
     EPOCH_DURATION = 5  # days
-
-
-class Transaction(APIView):
-    def get():
-        """Get transaction details."""
-        pass
-
-    def post():
-        """Build transaction."""
-        pass
 
 
 class CardaBotUserList(APIView):
@@ -319,7 +310,14 @@ class UnsignedTransaction(APIView):
     Create new tx.
     """
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get(self, request, pk: str, format=None):
+        """Get (unsigned) transaction details."""
+        unsigtx_obj = get_object_or_404(UnsignedTx, pk=pk)
+        return Response(
+            UnsignedTransactionSerializer(unsigtx_obj).data, status=status.HTTP_200_OK
+        )
 
     def post(self, request, format=None):
         """Build a new unsigned tx.
@@ -399,6 +397,14 @@ class UnsignedTransaction(APIView):
             UnsignedTransactionSerializer(unsigtx_obj).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class Transaction(APIView):
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def post():
+        """Build transaction."""
+        pass
 
 
 class Epoch(APIView):
