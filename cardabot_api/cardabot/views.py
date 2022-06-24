@@ -11,13 +11,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import utils
+from . import tx, utils
 from .graphql_client import GRAPHQL
 from .models import CardaBotUser, Chat
+from .models import UnsignedTransaction as UnsignedTx
 from .serializers import (
     CardaBotUserSerializer,
     ChatSerializer,
     TemporaryTokenSerializer,
+    UnsignedTransactionSerializer,
 )
 
 
@@ -43,6 +45,16 @@ class Const:
 
     SLOTS_EPOCH = 432000  # total slots in one epoch
     EPOCH_DURATION = 5  # days
+
+
+class Transaction(APIView):
+    def get():
+        """Get transaction details."""
+        pass
+
+    def post():
+        """Build transaction."""
+        pass
 
 
 class CardaBotUserList(APIView):
@@ -162,7 +174,7 @@ class ChatDetail(APIView):
                 )
             except Http404:
                 return Response(
-                    {"error": "CardaBot user not found"},
+                    {"detail": "CardaBot user not found"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
@@ -231,8 +243,6 @@ class CreateAndConnectUser(APIView):
 
     """
 
-    # permission_classes = (IsAuthenticated,)
-
     def post(self, request, format=None):
         # get chat
         tmp_token = request.data.get(BodyParameters.tmp_token)
@@ -240,10 +250,11 @@ class CreateAndConnectUser(APIView):
             chat = self._get_chat_by_tmp_token(tmp_token)
         except Http404:
             return Response(
-                {"error": "Temporary token not found"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "Temporary token not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        # create cardabot user
+        # convert staking hash to bech32 staking address
         staking_hash_from_wallet = request.data.get(BodyParameters.cardabot_user)
 
         begin_idx = 2
@@ -258,12 +269,14 @@ class CreateAndConnectUser(APIView):
             else Network.TESTNET,
         ).encode()
 
+        # staking_address = request.data.get(BodyParameters.cardabot_user)
+        # create cardabot user
         serialized_user = CardaBotUserList.serialize_and_create_new_user(
             {"stake_key": staking_address}
         )
         if serialized_user["status"] != status.HTTP_201_CREATED:
             # if stake_key already exists, do nothing. otherwise, return error
-            # if stake_key already exists, this expects the following error:
+            # if stake_key already exists, it returns:
             # "{
             #     "stake_key": [
             #         "carda bot user with this stake key already exists."
@@ -277,7 +290,7 @@ class CreateAndConnectUser(APIView):
             ChatDetail.update_chat_cardabot_user(chat, staking_address)
         except Http404:
             return Response(
-                {"error": "CardaBot user not found"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "CardaBot user not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         chat.tmp_token = None  # reset token
@@ -299,6 +312,93 @@ class CreateAndConnectUser(APIView):
             return Chat.objects.get(tmp_token=tmp_token)
         except Chat.DoesNotExist:
             raise Http404
+
+
+class UnsignedTransaction(APIView):
+    """
+    Create new tx.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, format=None):
+        """Build a new unsigned tx.
+
+        Store the `tx_id`, `tx_cbor`, `chat_id_sender`, `chat_id_receiver`,
+        `username_receiver`, and `amount` in the database.
+
+        Body params:
+            - chat_id_sender (str): the chat id of the sender
+            - chat_id_receiver (str): the chat id of the receiver
+            - username_receiver (str): the username of the receiver
+            - amount (float): amount in ADA
+            - client (str or None): client app (TELEGRAM, DISCORD, etc)
+
+        Returns:
+            - a json with the transaction id `tx_id` (201 status code).
+
+        Raises:
+            - Http406 if sender or receiver is not connect (no wallet registered)
+            - Http406 if sender doesn't have enough balance for tx
+            - Http404 if chat_id (sender or receiver) does not exist
+            - Http500 if unsigned tx fails to build
+        """
+        sender_chat = ChatDetail._get_object_by_chat_id(
+            chat_id=request.data.get("chat_id_sender"),
+            client=request.data.get("client"),
+        )
+
+        receiver_chat = ChatDetail._get_object_by_chat_id(
+            chat_id=request.data.get("chat_id_receiver"),
+            client=request.data.get("client"),
+        )
+
+        if not sender_chat.cardabot_user:
+            return Response(
+                {"detail": "Sender is not connected!"},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
+            )
+        if not receiver_chat.cardabot_user:
+            return Response(
+                {"detail": "Receiver is not connected!"},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
+            )
+
+        sender_addr = sender_chat.cardabot_user.stake_key
+        receiver_addr = receiver_chat.cardabot_user.stake_key
+        receiver_payaddr = tx.get_pay_addr_from_stake_addr(receiver_addr)
+
+        sel_addrs = tx.select_pay_addr(
+            stake_addr=sender_addr,
+            recipients=[(receiver_payaddr, float(request.data.get("amount")))],
+        )
+
+        if not sel_addrs:
+            return Response(
+                {"detail": "Sender doesn't have enough funds to complete the tx."},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
+            )
+
+        unsigtx = tx.build_unsigned_transaction(
+            sel_addrs,
+            recipients=[(receiver_payaddr, float(request.data.get("amount")))],
+        )
+
+        # store tx info in db
+        unsigtx_obj = UnsignedTx(
+            tx_id=str(unsigtx.id),
+            tx_cbor=str(unsigtx.to_cbor()),
+            sender_chat=sender_chat,
+            receiver_chat=receiver_chat,
+            amount=float(request.data.get("amount")),
+            username_receiver=request.data.get("username_receiver"),
+        )
+        unsigtx_obj.save()
+
+        return Response(
+            UnsignedTransactionSerializer(unsigtx_obj).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class Epoch(APIView):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import CardaBotUser, Chat
+from .models import CardaBotUser, Chat, UnsignedTransaction
 from .utils import check_pool_is_valid, check_stake_addr_is_valid
 
 
@@ -44,3 +44,9 @@ class TemporaryTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
         fields = ("tmp_token",)
+
+
+class UnsignedTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UnsignedTransaction
+        fields = ("tx_id",)

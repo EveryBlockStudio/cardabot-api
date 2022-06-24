@@ -1,4 +1,5 @@
 from django.db import models
+from django.dispatch import receiver
 
 
 class CardaBotUser(models.Model):
@@ -51,3 +52,23 @@ class Chat(models.Model):
 
     class Meta:
         unique_together = ("chat_id", "client")
+
+
+class UnsignedTransaction(models.Model):
+    """
+    Model of the unsigned transaction
+    """
+
+    tx_id = models.CharField(max_length=64, unique=True, primary_key=True)
+    tx_cbor = models.CharField(max_length=4096)  # cbor, can we optimize field type?
+    sender_chat = models.ForeignKey(
+        Chat, on_delete=models.CASCADE, related_name="sender_chat"
+    )
+    receiver_chat = models.ForeignKey(
+        Chat, on_delete=models.CASCADE, related_name="receiver_chat"
+    )
+    amount = models.DecimalField(max_digits=17, decimal_places=6)  # up to 45 bi ADA
+    username_receiver = models.CharField(max_length=32)
+
+    def __str__(self) -> str:
+        return self.tx_id
