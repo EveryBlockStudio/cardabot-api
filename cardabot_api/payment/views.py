@@ -1,9 +1,16 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, render
+
 from ..cardabot.models import UnsignedTransaction
 
-def payment(request, tx_id):
-    #return render(request, 'payment.html')
-    #tx_id = request.GET.get("tx_id", "")
-    obj = get_object_or_404(Transaction, pk=tx_id)
-    context = {obj.__dict__.keys(): obj.__dict__.values()}
-    return render(request, 'payment.html', context)
+
+def payment(request):
+    tx_id = request.GET.get("tx_id")
+    obj = get_object_or_404(UnsignedTransaction, pk=tx_id)
+    context = {
+        "amount": round(float(obj.amount), 6),
+        "receiver_chat_id": obj.receiver_chat.chat_id,
+        "tx_cbor": obj.tx_cbor,
+        "tx_id": obj.tx_id,
+        "username_receiver": obj.username_receiver,
+    }
+    return render(request, "payment.html", context)

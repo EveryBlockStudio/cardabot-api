@@ -93,8 +93,9 @@
 		<!-- Sign tx form -->
 		<div class="bg-gray-20 flex lg:px-64">
 			<div class="flex-grow bg-white rounded-xl shadow-xl p-12">
-				<h3 class="text-grey-800 text-center">You are sending {{ context.amount }} ada to {{
-					context.username_receiver|default:context.chat_id_receiver }} </h3>
+				<h3 class="text-grey-800 text-center">
+					You are sending {{ amount }} ada to {{ username_receiver|default:receiver_chat_id }}
+				</h3>
 				<br>
 
 				<h2 class="text-grey-900 text-xl text-center text-gray-500">Choose your wallet</h2>
