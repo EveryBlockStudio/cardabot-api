@@ -20,6 +20,7 @@ urlpatterns = [
     path("connect/", views.CreateAndConnectUser.as_view()),
     path("unsignedtx/", views.UnsignedTransaction.as_view()),
     path("unsignedtx/<str:pk>/", views.UnsignedTransaction.as_view()),
+    path("tx/", views.Transaction.as_view()),
     *graphql_urls,
 ]
 

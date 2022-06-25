@@ -400,19 +400,22 @@ class UnsignedTransaction(APIView):
 
 
 class Transaction(APIView):
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAuthenticated,)
 
-    def post():
-        """Build transaction."""
-        pass
+    def post(self, request, format=None):
+        """Compose a signed transaction using using the witness."""
+        unsigtx_obj = get_object_or_404(UnsignedTx, pk=request.data.get("tx_id"))
+        signed_tx = tx.compose_signed_transaction(
+            unsigned_tx=unsigtx_obj.tx_cbor, witness=request.data.get("witness")
+        )
+
+        return Response({"tx": signed_tx}, status=status.HTTP_200_OK)
 
 
 class Epoch(APIView):
     """Get information about the Cardano current epoch."""
 
-    permission_classes = (
-        IsAuthenticated,
-    )  # only authenticated users can access this view
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
         # gql queries
