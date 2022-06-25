@@ -389,8 +389,6 @@ class UnsignedTransaction(APIView):
 
 
 class Transaction(APIView):
-    permission_classes = (IsAuthenticated,)
-
     def post(self, request, format=None):
         """Compose a signed transaction using using the witness."""
         unsigtx_obj = get_object_or_404(UnsignedTx, pk=request.data.get("tx_id"))
