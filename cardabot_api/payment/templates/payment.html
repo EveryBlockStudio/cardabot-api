@@ -18,7 +18,7 @@
 				console.log("Wallet is connected");
 
 				try {
-					var api = await window.cardano.nami.enable();
+					var api = await eval("window.cardano." + wallet + ".enable()");
 				} catch (e) {
 					console.error(e);
 				}
@@ -26,7 +26,7 @@
 				if (api != null) {
 					const tx_id = new URLSearchParams(window.location.search).get('tx_id');
 					const response = await fetch(
-						window.location.origin + '/api/unsignedtx/' + window.location.pathname.split('/').at(-1),
+						window.location.origin + '/api/unsignedtx/' + tx_id,
 						{
 							method: 'GET',
 							headers: {
@@ -34,9 +34,12 @@
 							},
 						}
 					);
-					if (response.ok) {
+					
+					if (response.ok == true) {
+						
 						const tx = await response.json(); //extract JSON from the http response
-						var witness = await api.signTx(tx.unsigned_tx);
+						var witness = await api.signTx(tx.tx_cbor);
+						
 						const build_response = await fetch(
 							window.location.origin + '/api/tx/',
 							{
@@ -52,9 +55,10 @@
 
 						if (build_response.ok) {
 							const signed_tx = await build_response.json(); //extract JSON from the http response
-
+						
+						
 							const sent_tx_id = await api.submitTx(signed_tx.tx);
-							console.log(sent_tx_id);
+						
 							//window.location.href = window.location.origin + '/api/tx/' + signed_tx.tx_id;
 						}
 						//alert("Your wallet is now connected to CardaBot!");
