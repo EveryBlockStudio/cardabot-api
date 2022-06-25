@@ -1,14 +1,14 @@
 from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from . import views
+from . import graphql_views, views
 
 graphql_urls = [
-    path("epoch/", views.Epoch.as_view()),
-    path("pool/<str:pool_id>/", views.StakePool.as_view()),
-    path("netparams/", views.NetParams.as_view()),
-    path("pots/", views.Pots.as_view()),
-    path("netstats/", views.Netstats.as_view()),
+    path("epoch/", graphql_views.Epoch.as_view()),
+    path("pool/<str:pool_id>/", graphql_views.StakePool.as_view()),
+    path("netparams/", graphql_views.NetParams.as_view()),
+    path("pots/", graphql_views.Pots.as_view()),
+    path("netstats/", graphql_views.Netstats.as_view()),
 ]
 
 urlpatterns = [
