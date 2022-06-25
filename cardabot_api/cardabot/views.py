@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import tx
+from . import tx, utils
 from .models import CardaBotUser, Chat
 from .models import UnsignedTransaction as UnsignedTx
 from .serializers import (
@@ -397,3 +397,34 @@ class Transaction(APIView):
         )
 
         return Response({"tx": signed_tx}, status=status.HTTP_200_OK)
+
+
+class CheckTransaction(APIView):
+    """Check if the transaction has been submitted."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, tx_id: str, format=None):
+        """Get info about a transaction."""
+        try:
+            tx_info = utils.BlockFrostAPI.api.transaction(tx_id)
+        except utils.ApiError as e:
+            return Response(
+                {"detail": f"Transaction not found: {repr(e)}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        lvlace = sum(
+            int(amount.quantity)
+            for amount in tx_info.output_amount
+            if amount.unit == "lovelace"
+        )
+
+        res = {
+            "tx_id": tx_info.hash,
+            "block_height": tx_info.block_height,
+            "output_amount": lvlace,
+            "fees": tx_info.fees,
+        }
+
+        return Response(res, status=status.HTTP_200_OK)
