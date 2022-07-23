@@ -12,7 +12,7 @@
 } 
 
 .btn-ghost{
-    @apply text-secondary hover:bg-base-100 hover:border-primary hover:text-primary hover:border-2 hover:border-solid hover:drop-shadow-none;
+    @apply text-secondary hover:bg-transparent hover:text-primary hover:drop-shadow-none;
 }
 
 .btn-disabled {
