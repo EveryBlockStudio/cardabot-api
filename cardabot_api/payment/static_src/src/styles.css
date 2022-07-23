@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Customize your theme here */
+.btn {
+    @apply rounded-xl font-medium font-nunito hover:drop-shadow-xl;
+} 
+
+.btn-outline {
+    @apply border-primary border-solid border-2 bg-transparent text-primary hover:border-none hover:text-base-100 hover:bg-primary;
+} 
+
+.btn-ghost{
+    @apply text-secondary hover:bg-base-100 hover:border-primary hover:text-primary hover:border-2 hover:border-solid hover:drop-shadow-none;
+}
+
+.btn-disabled {
+    @apply opacity-50;
+}
+
+.badge {
+    @apply font-nunito font-medium;
+}
+
+.loading {
+    @apply hover:cursor-wait;
+}
+
+.input {
+    @apply focus:border-2 focus:outline-none focus:ring-2 focus:ring-base-300/25;
+}
+
+.input-primary {
+    @apply focus:ring-primary/25;
+}
+
+.input-secondary {
+    @apply focus:ring-secondary/25;
+}
+
+.input-accent {
+    @apply focus:ring-accent/25;
+}
+
+.input-info {
+    @apply focus:ring-info/25;
+}
+
+.input-success {
+    @apply focus:ring-success/25;
+}
+
+.input-warning {
+    @apply focus:ring-warning/25;
+}
+
+.input-error {
+    @apply focus:ring-error/25;
+}
+
+.alert {
+    @apply shadow-2xl;
+}
+
+.retangular-colored-box {
+    @apply rounded-md shadow-lg h-4 w-24 p-4;
+}
+
+.step {
+    @apply h-0 w-full;
+}
