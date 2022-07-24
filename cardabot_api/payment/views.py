@@ -14,3 +14,11 @@ def payment(request):
         "username_receiver": obj.username_receiver,
     }
     return render(request, "payment.html", context)
+
+def payment_success(request):
+    tx_id = request.GET.get("tx_id")
+    context = {
+        "url": f"https://cardanoscan.io/transaction/{tx_id}",
+        "tx_id": tx_id,
+    }
+    return render(request, "payment-success.html", context)

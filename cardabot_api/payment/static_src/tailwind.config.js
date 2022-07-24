@@ -70,6 +70,7 @@
             fontFamily: {
                 lora: ["Lora", "serif"],
                 nunito: ["Nunito Sans", "sans-serif"],
+                mono: ["Ubuntu Mono", "monospace"],
             },
         },
     },

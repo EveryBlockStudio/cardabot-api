@@ -67,7 +67,7 @@ ROOT_URLCONF = "cardabot_api.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "wallet_connection/templates")],
+        "DIRS": [os.path.join(BASE_DIR, "cardabot_api/templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
