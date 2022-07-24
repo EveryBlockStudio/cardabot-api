@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static tailwind_tags %}
+
+{% block content %}
+<head>
+
+	<title>Transaction was submitted | CardaBot</title>
+
+</head>
+	<body class="bg-base-200 min-h-screen">
+
+		<!-- Main content -->
+		<div class="my-12 flex flex-col justify-between items-center gap-20">
+			<!-- CardaBot avatar -->
+			<div class="avatar">
+				<div class="w-24 mask mask-squircle mx-auto">
+					<img src="{% static 'media/cardabot-logo.png' %}"/>
+				</div>
+			</div>
+
+			<!-- Connecting message -->
+			<div class="flex gap-4">
+				<a class="las la-check-circle text-2xl text-success" style="font-size: 48px"></a>
+				<h1 class="text-secondary font-nunito text-2xl text-center">Your transaction was submitted!</h1>
+				
+			</div>
+			<div >
+				<p class="text-secondary font-nunito text-center">
+					Check out the status on the link below: <br>
+				</p>
+				<div class="tooltip tooltip-bottom" data-tip="transaction id">
+					<a href="{{ url }}" class="btn btn-ghost btn-xs font-bold font-mono" target="_blank">{{ tx_id }}</a>
+				</div>
+			</div>
+			
+			<!-- End of Connecting message -->
+
+	
+			<!-- <div class="flex flex-col bg-base-100 rounded-xl shadow-xl p-12 ">
+				<div class="h-auto">
+					<h2 class="text-secondary text-xl text-center font-lora">Learn how to start tipping:</h2>
+					<div class="flex my-4 justify-between items-center">
+						<div class="flex flex-col h-20 w-80 gap-4">
+							<img src="{% static 'media/cardabot-logo.png' %}" class="w-full rounded-xl"/>
+							<h3 class="font-nunito text-lg font-bold text-center">
+								Lorem Ipsum
+							</h3>
+							<p class="text-secondary font-lora text-left">
+								Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit..
+						</div>
+						<div class="h-20 w-80">
+							<h3 class="font-nunito text-lg font-bold text-center">
+								p2
+							</h3>
+						</div>
+						<div class="h-20 w-80">
+							<h3 class="font-nunito text-md font-bold text-center">
+								p3
+							</h3>
+						</div>
+					</div>
+				</div>
+			</div> -->
+		</div>
+		<!-- End of Main content -->
+
+		
+	
+	</body>
+{% endblock %}
+

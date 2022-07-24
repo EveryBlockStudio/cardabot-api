@@ -1,6 +1,6 @@
-from dataclasses import dataclass
-import os
 import logging
+import os
+from dataclasses import dataclass
 from operator import itemgetter
 
 from pycardano import (
@@ -12,9 +12,6 @@ from pycardano import (
     TransactionOutput,
     TransactionWitnessSet,
 )
-
-# import dotenv
-# dotenv.load_dotenv()
 
 
 @dataclass
@@ -46,23 +43,29 @@ def _addr_balance(address: str) -> int:
     )
 
 
-def select_pay_addr(
-    pay_addresses: list[str], recipients: list[tuple[str, float]]
-) -> list[str]:
-    """This function is used to select a number of pay addresses for the tx.
+def get_pay_addr_from_stake_addr(stake_addr: str) -> str or None:
+    """Return the first pay address from a staking address."""
+    addresses = ChainContext.api.account_addresses(stake_addr)
+    return addresses[0].address if addresses else None
+
+
+def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> list[str]:
+    """Select pay addresses for the tx.
 
     Sort pay addresses by balance and return just the ones needed to complete the tx.
 
     Args:
-        pay_addresses: list of senders address in bech32 format.
+        stake_addr: the staking address of the sender in bech32 format.
         recipients: list of recipients' addresses in bech32 format and amounts.
 
     Returns:
         A list of pay addresses necessary to complete the tx, in bech32 format.
-
-    Raises:
-        ApiError: if the pay addr is not valid.
+        If there aren't enough funds, returns empty list.
     """
+
+    pay_addresses = [
+        item.address for item in ChainContext.api.account_addresses(stake_addr)
+    ]
 
     pay_addrs_balance = sorted(
         [(addr, _addr_balance(addr)) for addr in pay_addresses],
@@ -73,42 +76,32 @@ def select_pay_addr(
     total_amount = sum([_to_llace(amount) for _, amount in recipients])
     sel_addrs, bal_sum = list(), 0
 
+    fee = _to_llace(float(os.environ["FEE_UBOUND"]))
     for addr, balance in pay_addrs_balance:
         bal_sum += balance
         sel_addrs.append(addr)
-        if bal_sum >= total_amount + _to_llace(float(os.environ["FEE_UBOUND"])):
-            break
+        if bal_sum >= total_amount + fee:
+            return sel_addrs
 
-    return sel_addrs
+    return list()
 
 
 def build_unsigned_transaction(
-    sender_stake_address: str, recipients: list[tuple[str, float]]
+    sender_addresses: list[str], recipients: list[tuple[str, float]]
 ) -> str:
-    """This function is used to build an unsigned transaction.
+    """Build an unsigned transaction.
+
+    The balance of each sender address must add up to the total amount of the tx + fee.
 
     Args:
-        sender_stake_address: stake address in bech32 format.
+        sender_addresses: list of sender addresses in bech32 format.
         recipients: list of recipients' addresses in bech32 format and amounts.
 
     Returns:
         The usigned transaction in cbor format.
 
-    Raises:
-        ApiError: if the transaction is not built successfully.
-
     """
-    pay_addresses = [
-        item.address
-        for item in ChainContext.api.account_addresses(sender_stake_address)
-    ]
-
-    senders = select_pay_addr(
-        pay_addresses=pay_addresses,
-        recipients=recipients,
-    )
-
-    input_addresses = [Address.decode(sender) for sender in senders]
+    input_addresses = [Address.decode(sender) for sender in sender_addresses]
     change_address = input_addresses[0]  # return change to the first sender address
 
     output_addresses = [
@@ -138,7 +131,7 @@ def build_unsigned_transaction(
         )
     )
 
-    return Transaction(tx_body, TransactionWitnessSet()).to_cbor()
+    return Transaction(tx_body, TransactionWitnessSet())
 
 
 def compose_signed_transaction(unsigned_tx: str, witness: str) -> str:
