@@ -137,4 +137,3 @@ dmypy.json
 # DaisyUI stuff
 node_modules/
 */*/static_src/node_modules/
-*lock.json
