@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static tailwind_tags %}
+
+{% block content %}
+<head>
+
+	<title>CardaBot by EveryBlock Studio</title>
+
+</head>
+	
+	<body class="bg-base-200 min-h-screen">
+
+	<!-- Main content -->
+		<div class="grid grid-cols-1 p-12">
+			<!-- CardaBot avatar -->
+			<div class="avatar">
+				<div class="w-24 mask mask-squircle mx-auto">
+					<img src="{% static 'media/cardabot-logo.png' %}"/>
+				</div>
+			</div>
+
+			<!-- Connecting message -->
+			<div class="flex p-12"">
+				<div class="flex-grow">
+					<h1 class="text-secondary font-nunito text-2xl text-center">Check <a class="font-bold text-primary" href="https://t.me/cardabot">@CardaBot</a> on Telegram</h1>
+				</div>
+
+			</div>
+
+            <div class="mx-auto w-auto mockup-phone">
+                <img src="{% static 'media/mockup.jpeg' %}" class="w-96 my-2 rounded-xl ">
+              </div>
+		</div>
+	<!-- End of Main content -->
+	{% endblock %}
+	

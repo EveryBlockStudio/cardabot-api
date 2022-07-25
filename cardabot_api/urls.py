@@ -15,8 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from .wallet_connection import views
 
 urlpatterns = [
+    path("", views.home, name="home"),
     path("admin/", admin.site.urls),
     path("api/", include("cardabot_api.cardabot.urls")),
     path("pay/", include("cardabot_api.payment.urls")),

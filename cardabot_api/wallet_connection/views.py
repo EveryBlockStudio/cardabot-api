@@ -5,3 +5,6 @@ def wallet_connection(request):
 
 def wallet_connection_success(request):
     return render(request, 'connection-success.html')
+
+def home(request):
+    return render(request, 'home.html')
