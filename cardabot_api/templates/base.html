@@ -55,7 +55,8 @@
 						
 					} else {
 						console.log("Wallet not connected");
-						showDiv('wallet-connection-error-alert');
+						var alert_html_str = getAlertStr("error", "Stake address invalid!<br>Check if your wallet has at least one tx!", "wallet_connection_error_alert");
+						document.body.append(htmlToElement(alert_html_str));
 						document.getElementById(button).classList.remove('loading');
 					}
 					
@@ -150,7 +151,7 @@
 								const signed_tx = await build_response.json(); //extract JSON from the http response
 
 								try {
-									const sent_tx_id = await api.submitTx(signed_tx.tx);
+									var sent_tx_id = await api.submitTx(signed_tx.tx);
 								} catch (e) {
 									console.error(e);
 									var alert_html_str = getAlertStr("error", e.info, "wallet_error_alert");
@@ -163,7 +164,7 @@
 								
 								// Redirect to the success page
 								setTimeout(() => {
-									window.location.href = window.location.origin + '/pay/success?tx_id=' + signed_tx.tx_id;
+									window.location.href = window.location.origin + '/pay/success?tx_id=' + sent_tx_id;
 								}, 2000);
 								//window.location.href = window.location.origin + '/api/tx/' + signed_tx.tx_id;
 							} else {
