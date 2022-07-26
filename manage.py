@@ -6,24 +6,13 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-from cardabot_api.cardabot import cron
-from cardabot_api.cardabot.utils import Scheduler
 
 
 def main():
     """Run administrative tasks."""
     load_dotenv()
-
-    Scheduler.queue.add_job(
-        cron.reset_cardabot_tmp_token,
-        "interval",
-        seconds=60 * 15,
-        start_date=datetime.now(),
-        # args=[updater.bot],
-        id="reset_tmp_token",
-    )
-
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cardabot_api.settings")
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

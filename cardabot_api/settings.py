@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     "tailwind",
     "django_browser_reload",
     "rest_framework.authtoken",
-    "django_crontab",
 ]
 
 REST_FRAMEWORK = {
@@ -59,8 +58,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
-
-CRONJOBS = [("*/15 * * * *", "cardabot_api.cardabot.cron.reset_cardabot_tmp_token")]
 
 ROOT_URLCONF = "cardabot_api.urls"
 
