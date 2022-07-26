@@ -1,8 +1,10 @@
 """Helper functions for the cardabot endpoints."""
 
-from dataclasses import dataclass
-from blockfrost import BlockFrostApi, ApiError, ApiUrls
 import os
+from dataclasses import dataclass
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from blockfrost import ApiError, ApiUrls, BlockFrostApi
 
 
 @dataclass
@@ -13,6 +15,11 @@ class BlockFrostAPI:
         else ApiUrls.mainnet.value
     )
     api = BlockFrostApi(project_id=os.environ.get("BLOCKFROST_ID"), base_url=base_url)
+
+
+class Scheduler:
+    queue = BackgroundScheduler()
+    queue.start()  # start scheduler
 
 
 def lovelace_to_ada(lovelace_value: int) -> float:
