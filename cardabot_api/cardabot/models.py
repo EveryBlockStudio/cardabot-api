@@ -68,7 +68,7 @@ class UnsignedTransaction(models.Model):
         Chat, on_delete=models.CASCADE, related_name="receiver_chat"
     )
     amount = models.DecimalField(max_digits=17, decimal_places=6)  # up to 45 bi ADA
-    username_receiver = models.CharField(max_length=32, blank=True)
+    username_receiver = models.CharField(max_length=32, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.tx_id
