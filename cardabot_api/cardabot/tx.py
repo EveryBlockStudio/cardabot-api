@@ -1,7 +1,9 @@
+from itertools import accumulate
 import logging
 import os
 from dataclasses import dataclass
 from operator import itemgetter
+import re
 
 from pycardano import (
     Address,
@@ -64,26 +66,32 @@ def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> lis
     """
 
     pay_addresses = [
-        item.address for item in ChainContext.api.account_addresses(stake_addr)
+        item.address for item in ChainContext.api.account_addresses(stake_addr, gather_pages=True, order="desc")
     ]
 
-    pay_addrs_balance = sorted(
-        [(addr, _addr_balance(addr)) for addr in pay_addresses],
-        key=itemgetter(1),
-        reverse=True,
-    )
-
     total_amount = sum([_to_llace(amount) for _, amount in recipients])
-    sel_addrs, bal_sum = list(), 0
-
     fee = _to_llace(float(os.environ["FEE_UBOUND"]))
-    for addr, balance in pay_addrs_balance:
-        bal_sum += balance
-        sel_addrs.append(addr)
-        if bal_sum >= total_amount + fee:
-            return sel_addrs
 
-    return list()
+    selected_addresses = []
+    accumulate_amount = 0
+    for pay_address in pay_addresses:
+        addr_balance = _addr_balance(pay_address)
+
+        # if the balance is greater than the total amount + fee, we can use this address
+        if addr_balance >= total_amount + fee:
+            return [pay_address]
+        
+        # otherwise, we accumulate the balance and keep looking for more addresses
+        elif addr_balance > 0:
+            selected_addresses.append(pay_address)
+            accumulate_amount += addr_balance
+        
+            # check if accumulated amount is enough to complete the tx
+            if accumulate_amount >= total_amount + fee:
+                return selected_addresses
+
+    # if we reach this point, there aren't enough funds
+    return []
 
 
 def build_unsigned_transaction(
@@ -98,7 +106,7 @@ def build_unsigned_transaction(
         recipients: list of recipients' addresses in bech32 format and amounts.
 
     Returns:
-        The usigned transaction in cbor format.
+        The unsigned transaction in cbor format.
 
     """
     input_addresses = [Address.decode(sender) for sender in sender_addresses]
