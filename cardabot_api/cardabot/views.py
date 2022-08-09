@@ -345,14 +345,16 @@ class UnsignedTransaction(APIView):
                 {"detail": "Sender is not connected!"},
                 status=status.HTTP_406_NOT_ACCEPTABLE,
             )
+
         if not receiver_chat.cardabot_user:
-            return Response(
-                {"detail": "Receiver is not connected!"},
-                status=status.HTTP_406_NOT_ACCEPTABLE,
-            )
+            # receiver is not connected, hold their assets temporarily
+            receiver_addr = os.environ.get("CARDABOT_STAKE_KEY")
+            metadata = {674: {"msg": [f"{request.data.get('chat_id_receiver')}"]}}
+        else:
+            receiver_addr = receiver_chat.cardabot_user.stake_key
+            metadata = {}
 
         sender_addr = sender_chat.cardabot_user.stake_key
-        receiver_addr = receiver_chat.cardabot_user.stake_key
         receiver_payaddr = tx.get_pay_addr_from_stake_addr(receiver_addr)
 
         sel_addrs = tx.select_pay_addr(
@@ -369,6 +371,7 @@ class UnsignedTransaction(APIView):
         unsigtx = tx.build_unsigned_transaction(
             sel_addrs,
             recipients=[(receiver_payaddr, float(request.data.get("amount")))],
+            metadata=metadata,
         )
 
         # store tx info in db

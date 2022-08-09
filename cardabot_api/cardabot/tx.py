@@ -1,9 +1,8 @@
-from itertools import accumulate
 import logging
 import os
+
+# import re
 from dataclasses import dataclass
-from operator import itemgetter
-import re
 
 from pycardano import (
     Address,
@@ -14,6 +13,7 @@ from pycardano import (
     TransactionOutput,
     TransactionWitnessSet,
 )
+from pycardano.metadata import AlonzoMetadata, AuxiliaryData, Metadata
 
 
 @dataclass
@@ -66,7 +66,10 @@ def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> lis
     """
 
     pay_addresses = [
-        item.address for item in ChainContext.api.account_addresses(stake_addr, gather_pages=True, order="desc")
+        item.address
+        for item in ChainContext.api.account_addresses(
+            stake_addr, gather_pages=True, order="desc"
+        )
     ]
 
     total_amount = sum([_to_llace(amount) for _, amount in recipients])
@@ -80,12 +83,12 @@ def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> lis
         # if the balance is greater than the total amount + fee, we can use this address
         if addr_balance >= total_amount + fee:
             return [pay_address]
-        
+
         # otherwise, we accumulate the balance and keep looking for more addresses
         elif addr_balance > 0:
             selected_addresses.append(pay_address)
             accumulate_amount += addr_balance
-        
+
             # check if accumulated amount is enough to complete the tx
             if accumulate_amount >= total_amount + fee:
                 return selected_addresses
@@ -95,7 +98,9 @@ def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> lis
 
 
 def build_unsigned_transaction(
-    sender_addresses: list[str], recipients: list[tuple[str, float]]
+    sender_addresses: list[str],
+    recipients: list[tuple[str, float]],
+    metadata: dict = {},
 ) -> str:
     """Build an unsigned transaction.
 
@@ -104,6 +109,7 @@ def build_unsigned_transaction(
     Args:
         sender_addresses: list of sender addresses in bech32 format.
         recipients: list of recipients' addresses in bech32 format and amounts.
+        metadata: metadata to add to tx, use this in case the receiver is not connected.
 
     Returns:
         The unsigned transaction in cbor format.
@@ -124,6 +130,12 @@ def build_unsigned_transaction(
     for transaction_output in output_addresses:
         builder.add_output(transaction_output)
 
+    if metadata:  # tx for non-connected users, track receiver using metadata
+        auxiliary_data = AuxiliaryData(data=AlonzoMetadata(metadata=Metadata(metadata)))
+        builder.auxiliary_data = auxiliary_data
+    else:
+        auxiliary_data = None
+
     tx_body = builder.build(change_address=change_address)
 
     logging.debug(
@@ -139,7 +151,7 @@ def build_unsigned_transaction(
         )
     )
 
-    return Transaction(tx_body, TransactionWitnessSet())
+    return Transaction(tx_body, TransactionWitnessSet(), auxiliary_data=auxiliary_data)
 
 
 def compose_signed_transaction(unsigned_tx: str, witness: str) -> str:
