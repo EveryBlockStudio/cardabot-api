@@ -51,6 +51,21 @@ def _addr_balance(address: str) -> int:
     )
 
 
+def get_all_pay_addr_from_stake_addr(stake_addr: str) -> list[str]:
+    """Return all pay addresses from a staking address."""
+    pay_addresses = [
+        item.address
+        for item in ChainContext.api.account_addresses(stake_addr, gather_pages=True)
+    ]
+    return pay_addresses
+
+
+def stake_addr_balance(stake_addr: str) -> int:
+    """Get the total balance (lovelace) of a staking address."""
+    addresses = get_all_pay_addr_from_stake_addr(stake_addr)
+    return sum(_addr_balance(pay_address) for pay_address in addresses)
+
+
 def get_pay_addr_from_stake_addr(stake_addr: str) -> str or None:
     """Return the first pay address from a staking address."""
     addresses = ChainContext.api.account_addresses(stake_addr)

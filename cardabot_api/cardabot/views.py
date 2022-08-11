@@ -433,6 +433,56 @@ class CheckTransaction(APIView):
         return Response(res, status=status.HTTP_200_OK)
 
 
+class ChatIdBalance(APIView):
+    """Returns ADA balance associated with a `chat_id`.
+
+    There are two possible types of balances:
+        - "Controlled amount": balance of the stake address from the Cardabot User
+            associated with the chat_id.
+        - "Claimable amount": balance from CardaBot wallet associated with the chat_id.
+
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, chat_id: str, format=None):
+        """Get chat_id balance."""
+        try:
+            chat = ChatDetail._get_object_by_chat_id(
+                chat_id=chat_id,
+                client=request.query_params.get(QueryParameters.client_filter),
+            )
+        except Http404:
+            return Response(
+                {"detail": "Chat does not exist in database."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # get user controlled balance
+        if chat.cardabot_user:
+            controlled_amount = utils.lovelace_to_ada(
+                tx.stake_addr_balance(chat.cardabot_user.stake_key)
+            )
+        else:
+            controlled_amount = 0.0  # user not connected
+
+        # get user claimable balance (from CardaBot wallet)
+        claimable_utxos = tx.filter_utxos_by_metadata(chat_id)
+        if claimable_utxos:
+            claimable_amount = utils.lovelace_to_ada(
+                sum(utxo.output.amount for utxo in claimable_utxos)
+            )
+        else:
+            claimable_amount = 0.0  # no claimable utxos
+
+        res = {
+            "controlled_amount": controlled_amount,
+            "claimable_amount": claimable_amount,
+        }
+
+        return Response(res, status=status.HTTP_200_OK)
+
+
 class ClaimUserFunds(APIView):
     """Claim user funds.
 

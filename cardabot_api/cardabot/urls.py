@@ -14,9 +14,10 @@ graphql_urls = [
 urlpatterns = [
     path("chats/", views.ChatList.as_view()),
     path("chats/<str:chat_id>/", views.ChatDetail.as_view()),
+    path("chats/<str:chat_id>/token/", views.TemporaryChatToken.as_view()),
+    path("chats/<str:chat_id>/balance/", views.ChatIdBalance.as_view()),
     path("users/", views.CardaBotUserList.as_view()),
     path("users/<int:pk>/", views.CardaBotUserDetail.as_view()),
-    path("chats/<str:chat_id>/token/", views.TemporaryChatToken.as_view()),
     path("connect/", views.CreateAndConnectUser.as_view()),
     path("unsignedtx/", views.UnsignedTransaction.as_view()),
     path("unsignedtx/<str:pk>/", views.UnsignedTransaction.as_view()),
