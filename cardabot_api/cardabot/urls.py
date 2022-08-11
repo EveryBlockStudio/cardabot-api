@@ -22,6 +22,7 @@ urlpatterns = [
     path("unsignedtx/<str:pk>/", views.UnsignedTransaction.as_view()),
     path("tx/", views.Transaction.as_view()),
     path("checktx/<tx_id>/", views.CheckTransaction.as_view()),
+    path("claim/", views.ClaimUserFunds.as_view()),
     *graphql_urls,
 ]
 

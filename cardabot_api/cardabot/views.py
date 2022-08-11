@@ -431,3 +431,56 @@ class CheckTransaction(APIView):
         }
 
         return Response(res, status=status.HTTP_200_OK)
+
+
+class ClaimUserFunds(APIView):
+    """Claim user funds.
+
+    Claim user funds that are being held temporarily.
+
+    Body params:
+        - chat_id_receiver (str): the chat id of the user
+
+    Raises:
+        - Http406 if sender or receiver is not connect (no wallet registered)
+        - Http406 if sender doesn't have enough balance for tx
+        - Http404 if chat_id (receiver) does not exist
+        - Http500 if unsigned tx fails to build
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, format=None):
+        try:
+            receiver_chat = ChatDetail._get_object_by_chat_id(
+                chat_id=request.data.get("chat_id_receiver"),
+                client=request.query_params.get(QueryParameters.client_filter),
+            )
+        except Http404:
+            return Response(
+                {"detail": "Chat does not exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not receiver_chat.cardabot_user:
+            return Response(
+                {"detail": "Receiver is not connected!"},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
+            )
+
+        receiver_payaddr = tx.get_pay_addr_from_stake_addr(
+            receiver_chat.cardabot_user.stake_key
+        )
+
+        res = tx.claim_user_funds(
+            chat_id=request.data.get("chat_id_receiver"),
+            receiver_address=receiver_payaddr,
+        )
+
+        if not res:
+            return Response(
+                {"detail": "User doesn't have any funds to claim."},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
+            )
+
+        return Response({"tx_id": res.get("tx_id")}, status=status.HTTP_200_OK)

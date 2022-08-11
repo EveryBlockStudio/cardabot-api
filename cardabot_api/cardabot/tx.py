@@ -4,14 +4,20 @@ import os
 # import re
 from dataclasses import dataclass
 
+import pycardano
 from pycardano import (
     Address,
     BlockFrostChainContext,
     Network,
+    PaymentSigningKey,
+    PaymentVerificationKey,
     Transaction,
+    TransactionBody,
     TransactionBuilder,
+    TransactionInput,
     TransactionOutput,
     TransactionWitnessSet,
+    VerificationKeyWitness,
 )
 from pycardano.metadata import AlonzoMetadata, AuxiliaryData, Metadata
 
@@ -174,6 +180,104 @@ def compose_signed_transaction(unsigned_tx: str, witness: str) -> str:
     )
 
     return tx.to_cbor()
+
+
+def filter_utxos_by_metadata(
+    chat_id: str, address: str = os.environ.get("CARDABOT_STAKE_KEY")
+) -> list[pycardano.transaction.UTxO]:
+    """Filter utxos by chat_id in metadata."""
+
+    addresses = [
+        item.address
+        for item in ChainContext.api.account_addresses(
+            address, gather_pages=True, order="desc"
+        )
+    ]  # get all addresses from stake key
+
+    utxos = []
+    for addr in addresses:
+        for utxo in ChainContext.context.utxos(addr):
+            meta = ChainContext.api.transaction_metadata(
+                utxo.input.transaction_id, return_type="json"
+            )
+
+            # filter by metadata
+            if (
+                meta
+                and meta[0].get("label") == "674"
+                and meta[0].get("json_metadata").get("msg")[0] == chat_id
+            ):
+                utxos.append(utxo)
+
+    return utxos
+
+
+def get_payment_sk_vk():
+    sk = PaymentSigningKey.load("payment_testnet.skey")
+    vk = PaymentVerificationKey.from_signing_key(sk)
+    return sk, vk
+
+
+def calculate_tx_fee(
+    inputs: list[TransactionInput], outputs: list[TransactionOutput], max_fee: int
+) -> int:
+
+    tx_body = TransactionBody(inputs=inputs, outputs=outputs, fee=max_fee)
+
+    sk, vk = get_payment_sk_vk()
+    signature = sk.sign(tx_body.hash())
+    vk_witnesses = [VerificationKeyWitness(vk, signature)]
+
+    signed_tx = Transaction(tx_body, TransactionWitnessSet(vkey_witnesses=vk_witnesses))
+
+    fee = pycardano.utils.fee(ChainContext.context, len(signed_tx.to_cbor("bytes")))
+    return fee
+
+
+def claim_user_funds(chat_id: str, receiver_address: str = None) -> dict:
+    """Claim user funds.
+
+    Returns:
+        Dict with tx_id if successful, empty dict otherwise.
+
+    Raises:
+        InvalidArgumentException: When the transaction is invalid.
+        TransactionFailedException: When fails to submit the transaction to blockchain.
+
+    """
+    utxos = filter_utxos_by_metadata(chat_id)
+    if not utxos:
+        return {}
+
+    inputs = [
+        TransactionInput(utxo.input.transaction_id, utxo.input.index) for utxo in utxos
+    ]
+    amount = sum(utxo.output.amount for utxo in utxos)
+
+    max_fee = pycardano.utils.max_tx_fee(ChainContext.context)
+    fee = calculate_tx_fee(
+        inputs=inputs,
+        outputs=[
+            TransactionOutput.from_primitive([receiver_address, amount - max_fee])
+        ],
+        max_fee=max_fee,
+    )
+
+    tx_body = TransactionBody(
+        inputs=inputs,
+        # recalculate output amount to consider fee
+        outputs=[TransactionOutput.from_primitive([receiver_address, amount - fee])],
+        fee=fee,
+    )
+
+    sk, vk = get_payment_sk_vk()
+    signature = sk.sign(tx_body.hash())
+    vk_witnesses = [VerificationKeyWitness(vk, signature)]
+
+    signed_tx = Transaction(tx_body, TransactionWitnessSet(vkey_witnesses=vk_witnesses))
+
+    ChainContext.context.submit_tx(signed_tx.to_cbor())
+    return {"tx_id": str(signed_tx.id)}
 
 
 if __name__ == "__main__":
