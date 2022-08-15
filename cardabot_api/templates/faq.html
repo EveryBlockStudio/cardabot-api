@@ -35,11 +35,11 @@
 			<div class="collapse collapse-arrow bg-base-100 rounded-box hover:shadow-sm">
 			  <input type="checkbox" class="peer" /> 
 			  <div class="collapse-title text-lg font-nunito font-medium text-secondary peer-checked:text-primary peer-checked:font-bold">
-				{{ faq.question}}
+				{{ faq.question }}
 			  </div>
 			  <div class="collapse-content"> 
 					<article class="prose font-lora text-secondary">
-						{{ faq.answer }}
+						{{ faq.answer|safe }}
 					</article>
 			  </div>
 			</div>	
