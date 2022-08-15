@@ -9,6 +9,7 @@ graphql_urls = [
     path("netparams/", graphql_views.NetParams.as_view()),
     path("pots/", graphql_views.Pots.as_view()),
     path("netstats/", graphql_views.Netstats.as_view()),
+    path("epochsummary/", graphql_views.EpochSummary.as_view()),
 ]
 
 urlpatterns = [
