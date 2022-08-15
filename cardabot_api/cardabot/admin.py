@@ -5,3 +5,5 @@ from .models import *
 admin.site.register(CardaBotUser)
 admin.site.register(Chat)
 admin.site.register(UnsignedTransaction)
+admin.site.register(FaqCategory)
+admin.site.register(FaqQuestion)

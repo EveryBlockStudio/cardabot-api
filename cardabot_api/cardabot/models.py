@@ -72,3 +72,20 @@ class UnsignedTransaction(models.Model):
 
     def __str__(self) -> str:
         return self.tx_id
+
+class FaqCategory(models.Model):
+    """ Model of the FAQ category """
+    category = models.CharField(max_length=30, unique=True)
+    
+    def str(self) -> str:
+        return self.category
+        
+        
+class FaqQuestion(models.Model):
+    """ Question and answer model of the FAQ """
+    question = models.CharField(max_length=256)
+    answer = models.CharField(max_length=1024)
+    category = models.ForeignKey(FaqCategory, null=True, on_delete=models.SET_NULL)
+    
+    def str(self) -> str:
+        return f"Q:{self.question}\nA:{self.answer}"

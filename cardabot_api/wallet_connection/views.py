@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from cardabot_api.cardabot.models import Chat
+from cardabot_api.cardabot.models import Chat, FaqCategory, FaqQuestion
 from django.shortcuts import get_object_or_404
 
 def wallet_connection(request):
@@ -18,3 +18,15 @@ def wallet_connection_success(request):
 
 def home(request):
     return render(request, 'home.html')
+
+def faq(request):
+    # get all faq categories
+    categories = FaqCategory.objects.all().values()
+    faqs = FaqQuestion.objects.all().values()
+    
+    #pbj = {"tx_id": tx_id}
+    context = {
+        "categories": categories,
+        "faqs": faqs,
+    }
+    return render(request, 'faq.html', context)
