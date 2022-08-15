@@ -228,7 +228,7 @@ def filter_utxos_by_metadata(
 
 
 def get_payment_sk_vk():
-    sk = PaymentSigningKey.load("payment_testnet.skey")
+    sk = PaymentSigningKey.load(os.environ.get("SKEY"))
     vk = PaymentVerificationKey.from_signing_key(sk)
     return sk, vk
 
