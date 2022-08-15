@@ -21,6 +21,8 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("admin/", admin.site.urls),
     path("faq/", views.faq, name="faq"),
+    path("terms/", views.terms, name="terms"),
+    path("privacy/", views.privacy, name="privacy"),
     path("api/", include("cardabot_api.cardabot.urls")),
     path("pay/", include("cardabot_api.payment.urls")),
     path("connect/", include("cardabot_api.wallet_connection.urls")),
