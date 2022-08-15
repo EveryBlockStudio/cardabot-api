@@ -69,7 +69,9 @@
         extend: {
             fontFamily: {
                 lora: ["Lora", "serif"],
+                serif: ["Lora", "serif"],
                 nunito: ["Nunito Sans", "sans-serif"],
+                sans: ["Nunito Sans", "sans-serif"],
                 mono: ["Ubuntu Mono", "monospace"],
             },
         },
