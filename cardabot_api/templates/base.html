@@ -46,10 +46,9 @@
 						const myJson = await response.json(); //extract JSON from the http response
 						showDiv('wallet-connection-success-alert');
 						document.getElementById(button).classList.remove('loading');
-
 						// redirect to the success page
 						setTimeout(() => {
-							window.location.href = window.location.origin + '/connect/success/';
+							window.location.href = window.location.origin + '/connect/success' + '?stake=' + myJson.stake_address;
 						}, 2000);
 
 						

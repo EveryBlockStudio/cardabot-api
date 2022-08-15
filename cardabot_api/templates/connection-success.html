@@ -23,11 +23,18 @@
 			<!-- Connecting message -->
 			<div class="flex gap-4">
 				<a class="las la-check-circle text-2xl text-success" style="font-size: 48px"></a>
-				<h1 class="text-secondary font-nunito text-2xl text-center">Your wallet is connected to <a class="font-bold text-primary font-mono" href="https://t.me/cardabot">@CardaBot</a> !</h1>
+				<h1 class="text-secondary font-nunito text-2xl text-center">
+					Your wallet is connected to <a class="link link-primary font-mono" href="https://t.me/cardabot">@CardaBot</a> !
+				</h1>
 			</div>
+			<div class="flex gap-2">
+				<a class="link link-secondary text-sm" href="https://cardanoscan.io/stakekey/{{ stake_address }}" target="_blank">{{ stake_address }}</a>
+				<i class="las la-external-link-alt"></i>
+			</div>
+			
 			<p class="text-secondary font-nunito text-center">
-				Now you can use the <a class="font-bold text-primary font-mono">/tip</a> command to send ada to other users on Telegram. <br>
-				Check out the <a class="link link-primary" href="https://everyblock.studio/cardabot" target="_blank">CardaBot documentation</a> for more information.
+				Now you can use the <a class="font-bold text-primary font-mono">/tip</a> command to send ada to other users on Telegram.<br>
+				Check out the <a class="link link-primary" href="{% url 'faq' %}">FAQ</a> for more information.
 			</p>
 			<p class="text-secondary font-nunito text-center">
 				

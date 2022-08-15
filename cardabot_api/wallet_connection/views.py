@@ -15,7 +15,11 @@ def wallet_connection(request):
 
 def wallet_connection_success(request):
     """ Wallet connection success page """
-    return render(request, 'connection-success.html')
+    if request.method == 'GET':
+        # get stake address from request
+        stake_address = request.GET.get('stake')
+
+    return render(request, 'connection-success.html' , {'stake_address': stake_address})
 
 def home(request):
     """ Home page """

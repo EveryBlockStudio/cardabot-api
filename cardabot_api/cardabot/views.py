@@ -278,7 +278,8 @@ class CreateAndConnectUser(APIView):
 
         return Response(
             {
-                "success": f"CardaBotUser `{staking_address}` connected to chat `{chat.chat_id}`"
+                "success": f"CardaBotUser `{staking_address}` connected to chat `{chat.chat_id}`",
+                "stake_address": staking_address
             },
             status=status.HTTP_201_CREATED,
         )
