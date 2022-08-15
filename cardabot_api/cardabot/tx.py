@@ -1,19 +1,25 @@
-from itertools import accumulate
 import logging
 import os
-from dataclasses import dataclass
-from operator import itemgetter
-import re
 
+# import re
+from dataclasses import dataclass
+
+import pycardano
 from pycardano import (
     Address,
     BlockFrostChainContext,
     Network,
+    PaymentSigningKey,
+    PaymentVerificationKey,
     Transaction,
+    TransactionBody,
     TransactionBuilder,
+    TransactionInput,
     TransactionOutput,
     TransactionWitnessSet,
+    VerificationKeyWitness,
 )
+from pycardano.metadata import AlonzoMetadata, AuxiliaryData, Metadata
 
 
 @dataclass
@@ -45,6 +51,21 @@ def _addr_balance(address: str) -> int:
     )
 
 
+def get_all_pay_addr_from_stake_addr(stake_addr: str) -> list[str]:
+    """Return all pay addresses from a staking address."""
+    pay_addresses = [
+        item.address
+        for item in ChainContext.api.account_addresses(stake_addr, gather_pages=True)
+    ]
+    return pay_addresses
+
+
+def stake_addr_balance(stake_addr: str) -> int:
+    """Get the total balance (lovelace) of a staking address."""
+    addresses = get_all_pay_addr_from_stake_addr(stake_addr)
+    return sum(_addr_balance(pay_address) for pay_address in addresses)
+
+
 def get_pay_addr_from_stake_addr(stake_addr: str) -> str or None:
     """Return the first pay address from a staking address."""
     addresses = ChainContext.api.account_addresses(stake_addr)
@@ -66,7 +87,10 @@ def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> lis
     """
 
     pay_addresses = [
-        item.address for item in ChainContext.api.account_addresses(stake_addr, gather_pages=True, order="desc")
+        item.address
+        for item in ChainContext.api.account_addresses(
+            stake_addr, gather_pages=True, order="desc"
+        )
     ]
 
     total_amount = sum([_to_llace(amount) for _, amount in recipients])
@@ -80,12 +104,12 @@ def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> lis
         # if the balance is greater than the total amount + fee, we can use this address
         if addr_balance >= total_amount + fee:
             return [pay_address]
-        
+
         # otherwise, we accumulate the balance and keep looking for more addresses
         elif addr_balance > 0:
             selected_addresses.append(pay_address)
             accumulate_amount += addr_balance
-        
+
             # check if accumulated amount is enough to complete the tx
             if accumulate_amount >= total_amount + fee:
                 return selected_addresses
@@ -95,7 +119,9 @@ def select_pay_addr(stake_addr: str, recipients: list[tuple[str, float]]) -> lis
 
 
 def build_unsigned_transaction(
-    sender_addresses: list[str], recipients: list[tuple[str, float]]
+    sender_addresses: list[str],
+    recipients: list[tuple[str, float]],
+    metadata: dict = {},
 ) -> str:
     """Build an unsigned transaction.
 
@@ -104,6 +130,7 @@ def build_unsigned_transaction(
     Args:
         sender_addresses: list of sender addresses in bech32 format.
         recipients: list of recipients' addresses in bech32 format and amounts.
+        metadata: metadata to add to tx, use this in case the receiver is not connected.
 
     Returns:
         The unsigned transaction in cbor format.
@@ -124,6 +151,12 @@ def build_unsigned_transaction(
     for transaction_output in output_addresses:
         builder.add_output(transaction_output)
 
+    if metadata:  # tx for non-connected users, track receiver using metadata
+        auxiliary_data = AuxiliaryData(data=AlonzoMetadata(metadata=Metadata(metadata)))
+        builder.auxiliary_data = auxiliary_data
+    else:
+        auxiliary_data = None
+
     tx_body = builder.build(change_address=change_address)
 
     logging.debug(
@@ -139,7 +172,7 @@ def build_unsigned_transaction(
         )
     )
 
-    return Transaction(tx_body, TransactionWitnessSet())
+    return Transaction(tx_body, TransactionWitnessSet(), auxiliary_data=auxiliary_data)
 
 
 def compose_signed_transaction(unsigned_tx: str, witness: str) -> str:
@@ -162,6 +195,104 @@ def compose_signed_transaction(unsigned_tx: str, witness: str) -> str:
     )
 
     return tx.to_cbor()
+
+
+def filter_utxos_by_metadata(
+    chat_id: str, address: str = os.environ.get("CARDABOT_STAKE_KEY")
+) -> list[pycardano.transaction.UTxO]:
+    """Filter utxos by chat_id in metadata."""
+
+    addresses = [
+        item.address
+        for item in ChainContext.api.account_addresses(
+            address, gather_pages=True, order="desc"
+        )
+    ]  # get all addresses from stake key
+
+    utxos = []
+    for addr in addresses:
+        for utxo in ChainContext.context.utxos(addr):
+            meta = ChainContext.api.transaction_metadata(
+                utxo.input.transaction_id, return_type="json"
+            )
+
+            # filter by metadata
+            if (
+                meta
+                and meta[0].get("label") == "674"
+                and meta[0].get("json_metadata").get("msg")[0] == chat_id
+            ):
+                utxos.append(utxo)
+
+    return utxos
+
+
+def get_payment_sk_vk():
+    sk = PaymentSigningKey.load(os.environ.get("SKEY"))
+    vk = PaymentVerificationKey.from_signing_key(sk)
+    return sk, vk
+
+
+def calculate_tx_fee(
+    inputs: list[TransactionInput], outputs: list[TransactionOutput], max_fee: int
+) -> int:
+
+    tx_body = TransactionBody(inputs=inputs, outputs=outputs, fee=max_fee)
+
+    sk, vk = get_payment_sk_vk()
+    signature = sk.sign(tx_body.hash())
+    vk_witnesses = [VerificationKeyWitness(vk, signature)]
+
+    signed_tx = Transaction(tx_body, TransactionWitnessSet(vkey_witnesses=vk_witnesses))
+
+    fee = pycardano.utils.fee(ChainContext.context, len(signed_tx.to_cbor("bytes")))
+    return fee
+
+
+def claim_user_funds(chat_id: str, receiver_address: str = None) -> dict:
+    """Claim user funds.
+
+    Returns:
+        Dict with tx_id if successful, empty dict otherwise.
+
+    Raises:
+        InvalidArgumentException: When the transaction is invalid.
+        TransactionFailedException: When fails to submit the transaction to blockchain.
+
+    """
+    utxos = filter_utxos_by_metadata(chat_id)
+    if not utxos:
+        return {}
+
+    inputs = [
+        TransactionInput(utxo.input.transaction_id, utxo.input.index) for utxo in utxos
+    ]
+    amount = sum(utxo.output.amount for utxo in utxos)
+
+    max_fee = pycardano.utils.max_tx_fee(ChainContext.context)
+    fee = calculate_tx_fee(
+        inputs=inputs,
+        outputs=[
+            TransactionOutput.from_primitive([receiver_address, amount - max_fee])
+        ],
+        max_fee=max_fee,
+    )
+
+    tx_body = TransactionBody(
+        inputs=inputs,
+        # recalculate output amount to consider fee
+        outputs=[TransactionOutput.from_primitive([receiver_address, amount - fee])],
+        fee=fee,
+    )
+
+    sk, vk = get_payment_sk_vk()
+    signature = sk.sign(tx_body.hash())
+    vk_witnesses = [VerificationKeyWitness(vk, signature)]
+
+    signed_tx = Transaction(tx_body, TransactionWitnessSet(vkey_witnesses=vk_witnesses))
+
+    ChainContext.context.submit_tx(signed_tx.to_cbor())
+    return {"tx_id": str(signed_tx.id)}
 
 
 if __name__ == "__main__":

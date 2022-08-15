@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static tailwind_tags %}
+
+{% block content %}
+<head>
+
+	<title>CardaBot by EveryBlock Studio</title>
+
+</head>
+	
+	<body class="bg-base-200 min-h-screen">
+
+	<!-- Main content -->
+	<div class="flex flex-col py-4 lg:p-24 gap-4 lg:gap-12 text-base-content items-center " >
+		<!-- Header -->
+		<div class="flex flex-col text-center lg:gap-12 max-w-lg">
+		  <div class="flex gap-2 justify-center" >
+			<i class="lar la-question-circle text-5xl"></i>
+			<h1 class="text-5xl font-nunito font-bold">FAQ</h1>
+		  </div>
+		  <p class="font-lora">
+			If you can't find what you are looking for here, please contact our support on <a class="link link-primary" href="https://t.me/ebs_pool" target="_blank">Telegram</a> or <a class="link link-primary" href="https://discord.gg/rzwu2kGhM2" target="_blank">Discord</a>.</p>
+		</div>
+		
+		<!-- FAQ -->
+		{% for category in categories %}
+		<div class="flex flex-col gap-4 lg:w-1/2 max-w-lg">
+		  <h2 class="text-xl font-nunito font-bold ">
+			{{ category.category }}
+		  </h2>
+
+		  {% for faq in faqs %}
+		  {% if faq.category_id == category.id %}
+		  <div class="flex flex-col gap-2">
+			<div class="collapse collapse-arrow bg-base-100 rounded-box hover:shadow-sm">
+			  <input type="checkbox" class="peer" /> 
+			  <div class="collapse-title text-lg font-nunito font-medium text-secondary peer-checked:text-primary peer-checked:font-bold">
+				{{ faq.question}}
+			  </div>
+			  <div class="collapse-content"> 
+					<article class="prose font-lora text-secondary">
+						{{ faq.answer }}
+					</article>
+			  </div>
+			</div>	
+		  </div>
+		  {% endif %}
+		  {% endfor %}
+		</div>
+		{% endfor %}
+	  </div>
+	<!-- End of Main content -->
+	{% endblock %}
+	

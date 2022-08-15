@@ -260,3 +260,36 @@ class Netstats(APIView):
         }
 
         return Response({"data": response}, status=status.HTTP_200_OK)
+
+class EpochSummary(APIView):
+    """Get epoch summary."""
+
+    permission_classes = (
+        IsAuthenticated,
+    )  # only authenticated users can access this view
+
+    def get(self, request, format=None):
+        epoch = GRAPHQL.this_epoch - 1
+        epoch_summary = GRAPHQL("epochDetailsByNumber.graphql", {"number": epoch}).get("data")["epochs"][0]
+
+        fees, rewards, reserves, treasury = utils.values_to_ada(
+            [
+                int(epoch_summary["fees"]),
+                int(epoch_summary["adaPots"]["rewards"]),
+                int(epoch_summary["adaPots"]["reserves"]),
+                int(epoch_summary["adaPots"]["treasury"]),
+            ],
+            request.query_params.get(QueryParameters.currency_format),
+        )
+
+        response = {
+            "epoch": epoch,
+            "blocks": epoch_summary["blocksCount"],
+            "txs": epoch_summary["transactionsCount"],
+            "fees": fees,
+            "rewards": rewards,
+            "reserves": reserves,
+            "treasury": treasury,
+        }
+
+        return Response({"data": response}, status=status.HTTP_200_OK)

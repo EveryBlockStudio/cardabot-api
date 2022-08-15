@@ -46,10 +46,9 @@
 						const myJson = await response.json(); //extract JSON from the http response
 						showDiv('wallet-connection-success-alert');
 						document.getElementById(button).classList.remove('loading');
-
 						// redirect to the success page
 						setTimeout(() => {
-							window.location.href = window.location.origin + '/connect/success/';
+							window.location.href = window.location.origin + '/connect/success' + '?stake=' + myJson.stake_address;
 						}, 2000);
 
 						
@@ -203,52 +202,28 @@
 <!-- Navbar -->
 <div class="navbar bg-base-100 px-48 py-3 shadow-sm rounded-2xl">
 	<div class="flex-1">
-		<a href="https://everyblock.studio/" class="btn btn-ghost my-auto" target="_blank">
-			<img src="{% static 'media/ebs_logo_icon_color.png' %}" class="h-10"/>
+		<a href="{% url 'home' %}" class="btn btn-ghost my-auto">
+			<img src="{% static 'media/cardabot-logo.png' %}" class="h-10"/>
 		</a>
-		<a href="https://everyblock.studio/" class="btn btn-ghost capitalize text-xl font-bold font-nunito" target="_blank">
-			EveryBlock.studio
+		<a href="{% url 'home' %}" class="btn btn-ghost capitalize text-xl font-bold font-nunito">
+			CardaBot
 		</a>
 	</div>
-	
-	<div class="tooltip tooltip-bottom" data-tip="soon :(">
-		<div class="flex-none">
-			<a class="btn btn-ghost btn-circle">
+
+	<ul class="menu menu-horizontal menu-compact p-0">
+		<!-- <li><a>Item 1</a></li> -->
+		<li tabindex="0">
+			<a class="btn btn-ghost btn-circle" href="{% url 'faq' %}">
 				<i class="las la-question-circle" style="font-size: 24px"></i>
 			</a>
-		<!-- <div class="dropdown dropdown-end">
-			<label tabindex="0" class="btn btn-ghost btn-circle">
-				<i class="las la-question-circle" style="font-size: 24px"> </i>
-			</label>
-			<div tabindex="0" class="mt-3 card card-compact dropdown-content w-52 bg-base-100 shadow">
-			<div class="card-body">
-				<span class="font-bold text-lg">8 Items</span>
-				<span class="text-info">Subtotal: $999</span>
-				<div class="card-actions">
-				<button class="btn btn-ghost btn-block">FAQ</button>
-				</div>
-			</div>
-			</div>
-		</div> -->
-		<!-- <div class="dropdown dropdown-end">
-			<label tabindex="0" class="btn btn-ghost btn-circle avatar">
-			<div class="w-10 rounded-full">
-				<img src="https://placeimg.com/80/80/people" />
-			</div>
-			</label>
-			<ul tabindex="0" class="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52">
-			<li>
-				<a class="justify-between">
-				Profile
-				<span class="badge">New</span>
-				</a>
-			</li>
-			<li><a>Settings</a></li>
-			<li><a>Logout</a></li>
+			<ul class="p-2 bg-base-100">
+				<li><a href="{% url 'faq' %}">FAQ</a></li>
+				<li><a href="{% url 'terms' %}">Terms of Use</a></li>
+				<li><a href="{% url 'privacy' %}">Privacy Policy</a></li>
 			</ul>
-		</div> -->
-		</div>
-	</div>
+		</li>
+		<!-- <li><a>Item 3</a></li> -->
+	  </ul>
 	
 </div>
 <!-- End of Navbar -->
@@ -259,7 +234,7 @@
 <!-- Footer -->
 <footer class="footer items-center p-4 bg-neutral text-neutral-content sticky top-[100vh]">
 	<div class="items-center grid-flow-col">
-		<p> EveryBlock Studio © 2022 - All rights reserved</p>
+		<p> <a href="https://everyblock.studio/" target="_blank">EveryBlock Studio</a> © 2022 - All rights reserved</p>
 	</div>
 
 	<div class="grid-flow-col gap-0 md:place-self-center md:justify-self-end">
